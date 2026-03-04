@@ -1,0 +1,141 @@
+{
+  "projectType": "saas",
+  "projectName": "LemmingsJS-MIDI",
+  "projectDescription": "Browser-based Lemmings game with WebMIDI sequencing, level editor, and AI automation via MCP",
+  "theme": "almond",
+  "primaryColor": "#00AA00",
+  "lightColor": "#33CC33",
+  "darkColor": "#008800",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quick-start",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/game-engine",
+              "features/level-editor",
+              "features/midi-sequencing",
+              "features/mcp-automation"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/controls",
+              "guides/keyboard-shortcuts",
+              "guides/url-parameters",
+              "guides/midi-setup",
+              "guides/level-editing",
+              "guides/mcp-integration"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/time-travel",
+              "advanced/performance",
+              "advanced/procgen",
+              "advanced/spectator-mode"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/architecture",
+              "development/testing",
+              "development/contributing",
+              "development/offline-tools"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "MCP Reference",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "mcp/overview",
+              "mcp/setup",
+              "mcp/quickstart"
+            ]
+          },
+          {
+            "group": "Tools",
+            "pages": [
+              "mcp/tools/session",
+              "mcp/tools/time-control",
+              "mcp/tools/state-inspection",
+              "mcp/tools/lemming-control",
+              "mcp/tools/input",
+              "mcp/tools/vision",
+              "mcp/tools/editor",
+              "mcp/tools/watch"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "mcp/resources",
+              "mcp/events",
+              "mcp/protocol"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "File Formats",
+        "groups": [
+          {
+            "group": "Level Formats",
+            "pages": [
+              "formats/nxlv",
+              "formats/lvl",
+              "formats/level-packs"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Accurate Lemmings game engine supporting 25M+ simultaneous lemmings at 60x speed",
+    "Full-featured level editor with undo/redo, import/export for .nxlv and .lvl formats",
+    "WebMIDI sequencing with routing, input mapping, and real-time controls",
+    "MCP server for AI automation with state inspection and vision capture",
+    "Time travel with tick-by-tick stepping and reverse playback",
+    "Interactive spectator mode for watching AI agents play",
+    "Procedural level generation with AI director",
+    "Browser-based PWA with offline support"
+  ],
+  "publicApiSurface": [
+    "session.create",
+    "session.close",
+    "time.pause",
+    "time.resume",
+    "time.step",
+    "state.get",
+    "state.delta",
+    "lemming.summary",
+    "lemming.select",
+    "skill.apply",
+    "input.action",
+    "input.keys",
+    "vision.capture",
+    "vision.captureSequence",
+    "editor.apply",
+    "watch.create",
+    "watch.cancel",
+    "events.poll"
+  ]
+}
