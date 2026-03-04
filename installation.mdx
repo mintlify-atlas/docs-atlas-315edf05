@@ -1,0 +1,391 @@
+---
+title: Installation
+description: Set up LemmingsJS-MIDI locally for development and offline use
+---
+
+## Prerequisites
+
+Before installing LemmingsJS-MIDI, ensure you have:
+
+<CardGroup cols={2}>
+  <Card title="Node.js 20+" icon="node-js">
+    Download from [nodejs.org](https://nodejs.org)
+  </Card>
+  <Card title="Git" icon="git-alt">
+    Install from [git-scm.com](https://git-scm.com)
+  </Card>
+</CardGroup>
+
+<Info>
+  This repository is designed for local development and offline tooling. It is not intended for npm distribution.
+</Info>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Open your terminal and clone the repository:
+    
+    ```bash
+    git clone https://github.com/doublemover/LemmingsJS-MIDI
+    cd LemmingsJS-MIDI
+    ```
+    
+    This creates a local copy of the entire project including all game assets, levels, and tools.
+  </Step>
+  
+  <Step title="Install Dependencies">
+    Install all required Node.js packages:
+    
+    ```bash
+    npm install
+    ```
+    
+    This installs development dependencies including:
+    - `http-server` for local hosting
+    - `mocha` and `chai` for testing
+    - `playwright` for end-to-end tests
+    - `eslint` for code quality
+    - `c8` for code coverage
+  </Step>
+  
+  <Step title="Start the Development Server">
+    Launch the local HTTP server:
+    
+    ```bash
+    npm start
+    ```
+    
+    The server starts on port 8080 with CORS enabled.
+  </Step>
+  
+  <Step title="Open in Browser">
+    Navigate to:
+    
+    - **Game**: [https://localhost:8080](https://localhost:8080)
+    - **Editor**: [https://localhost:8080/editor.html](https://localhost:8080/editor.html)
+    
+    <Note>
+      The URLs use `https` when running with the HTTPS server (see below). Use `http://localhost:8080` with the standard `npm start` command.
+    </Note>
+  </Step>
+</Steps>
+
+## HTTPS Server (For MCP)
+
+If you need HTTPS for MCP integration or WebMIDI testing:
+
+<Steps>
+  <Step title="Generate SSL Certificates">
+    Create a `certs/` directory and generate local SSL certificates:
+    
+    ```bash
+    mkdir -p certs
+    # Use mkcert or your preferred SSL certificate tool
+    mkcert -install
+    mkcert -key-file certs/localhost-key.pem -cert-file certs/localhost.pem localhost
+    ```
+  </Step>
+  
+  <Step title="Start HTTPS Server">
+    Run the HTTPS-enabled server:
+    
+    ```bash
+    npm run start-https
+    ```
+    
+    Access the game at [https://localhost:8080](https://localhost:8080)
+  </Step>
+</Steps>
+
+<Warning>
+  The HTTPS server is required for MCP integration and some browser security features. Standard HTTP is sufficient for offline gameplay and development.
+</Warning>
+
+## Verify Installation
+
+Confirm everything is working:
+
+<Tabs>
+  <Tab title="Run Tests">
+    Execute the complete test suite:
+    
+    ```bash
+    npm test
+    ```
+    
+    This runs all Mocha unit tests. You should see output indicating all tests pass.
+  </Tab>
+  
+  <Tab title="Check Linting">
+    Verify code quality standards:
+    
+    ```bash
+    npm run lint
+    ```
+    
+    ESLint checks all JavaScript files for style and potential errors.
+  </Tab>
+  
+  <Tab title="Test Coverage">
+    Generate a coverage report:
+    
+    ```bash
+    npm run coverage
+    ```
+    
+    Current project coverage is 99.51%. The editor has 100% coverage.
+  </Tab>
+</Tabs>
+
+## Project Structure
+
+Understanding the repository layout:
+
+```
+LemmingsJS-MIDI/
+├── js/                    # Core JavaScript modules
+│   ├── app/              # Application bootstrap and main game loop
+│   ├── editor/           # Level editor implementation
+│   ├── midi/             # WebMIDI sequencer and router
+│   └── vendor/           # External libraries (jQuery, WebMIDI.js)
+├── css/                  # Stylesheets for game and editor
+├── img/                  # UI images and icons
+├── docs/                 # Technical documentation
+├── test/                 # Mocha test suites
+├── e2e/                  # Playwright end-to-end tests
+├── tools/                # Offline asset export tools
+├── scripts/              # Build and utility scripts
+├── mcp/                  # MCP server implementation
+├── lemmings/             # Original Lemmings level pack
+├── lemmings_ohNo/        # Oh No! More Lemmings pack
+├── xmas91/               # Christmas 1991 levels
+├── xmas92/               # Christmas 1992 levels
+├── holiday93/            # Holiday 1993 levels
+├── holiday94/            # Holiday 1994 levels
+├── index.html            # Main game page
+├── editor.html           # Level editor page
+├── package.json          # Node.js configuration and scripts
+├── config.json           # Game configuration
+├── keybindings.json      # Keyboard mapping
+└── midi-mapping.json     # MIDI default configuration
+```
+
+## Available NPM Scripts
+
+### Running the Game
+
+<CodeGroup>
+
+```bash Development Server
+npm start                 # HTTP server on port 8080
+npm run start-https       # HTTPS server (requires certs)
+```
+
+```bash Testing
+npm test                  # Run all Mocha tests
+npm run test-core         # Game engine tests only
+npm run test-editor       # Editor tests only
+npm run test-e2e          # Playwright E2E tests
+npm run coverage          # Generate coverage report
+npm run coverage-editor   # 100% coverage check for editor
+```
+
+```bash Code Quality
+npm run lint              # Check ESLint rules
+npm run format            # Auto-fix formatting issues
+npm run depcheck          # Find unused dependencies
+```
+
+```bash Asset Tools
+npm run export-all-sprites    # Export all sprite data
+npm run export-ground-images  # Export terrain graphics
+npm run pack-levels           # Pack level data
+npm run list-sprites          # List available sprites
+```
+
+```bash MCP Server
+npm run mcp               # Start MCP server (requires HTTPS server)
+```
+
+</CodeGroup>
+
+<Note>
+  Run `npm run format` before committing to ensure consistent code style across the project.
+</Note>
+
+## Configuration Files
+
+Customize your local installation:
+
+### keybindings.json
+
+Modify keyboard controls to your preference. The file maps actions to key codes:
+
+```json
+{
+  "pause": ["Space"],
+  "speedUp": ["Equal", "NumpadAdd"],
+  "speedDown": ["Minus", "NumpadSubtract"],
+  "stepForward": ["BracketRight"],
+  "stepBackward": ["BracketLeft"]
+  // ... more bindings
+}
+```
+
+### midi-mapping.json
+
+Configure default MIDI routing, input mapping, and sequencer parameters. This file provides defaults that are loaded on first run or when values are missing from localStorage.
+
+### config.json
+
+Game-wide settings including level pack paths, asset directories, and engine parameters.
+
+## Offline Asset Tools
+
+The `tools/` directory contains Node.js scripts for working with game assets:
+
+<CardGroup cols={2}>
+  <Card title="Sprite Export" icon="image">
+    Extract and convert sprite data from original game files
+  </Card>
+  <Card title="Level Packing" icon="box">
+    Package custom level packs in NeoLemmix format
+  </Card>
+  <Card title="Ground Images" icon="mountain">
+    Export terrain graphics at various scales
+  </Card>
+  <Card title="Sprite Patching" icon="wrench">
+    Apply fixes and improvements to sprite data
+  </Card>
+</CardGroup>
+
+See [docs/offline-tools.md](https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/offline-tools.md) in the repository for detailed usage.
+
+## Progressive Web App
+
+Install LemmingsJS-MIDI as a standalone app:
+
+<Steps>
+  <Step title="Access via HTTPS">
+    PWA installation requires HTTPS. Use `npm run start-https` or access the online version.
+  </Step>
+  
+  <Step title="Install Prompt">
+    Your browser will show an install prompt. Click it or:
+    
+    - **Chrome/Edge**: Menu → Install LemmingsJS-MIDI
+    - **Safari**: Share → Add to Home Screen
+  </Step>
+  
+  <Step title="Offline Access">
+    After first load, the service worker caches core assets. The app works offline for subsequent visits.
+  </Step>
+</Steps>
+
+<Info>
+  The PWA launches in fullscreen landscape mode. Touch input is supported but still being refined - please report issues on GitHub.
+</Info>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="npm install fails">
+    Ensure you're using Node.js 20 or higher:
+    
+    ```bash
+    node --version  # Should show v20.x.x or higher
+    ```
+    
+    Try clearing npm cache:
+    
+    ```bash
+    npm cache clean --force
+    npm install
+    ```
+  </Accordion>
+  
+  <Accordion title="Port 8080 already in use">
+    Either stop the process using port 8080, or modify the `package.json` scripts to use a different port:
+    
+    ```json
+    "start": "http-server --cors=* -p 3000"
+    ```
+  </Accordion>
+  
+  <Accordion title="Tests failing">
+    Some tests may require a display server. For headless environments, use Xvfb:
+    
+    ```bash
+    xvfb-run npm test
+    ```
+    
+    Ensure Playwright browsers are installed:
+    
+    ```bash
+    npm run test-e2e:install
+    ```
+  </Accordion>
+  
+  <Accordion title="HTTPS certificate errors">
+    For local SSL certificates, install `mkcert`:
+    
+    ```bash
+    # macOS
+    brew install mkcert
+    
+    # Windows (Chocolatey)
+    choco install mkcert
+    
+    # Linux
+    # See https://github.com/FiloSottile/mkcert
+    ```
+    
+    Then generate certificates as shown in the HTTPS setup step.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Development Guide"
+    icon="code"
+    href="/development/architecture"
+  >
+    Learn the codebase architecture
+  </Card>
+  <Card
+    title="Contributing"
+    icon="code-pull-request"
+    href="/development/contributing"
+  >
+    Contribute to the project
+  </Card>
+  <Card
+    title="Testing Guide"
+    icon="flask"
+    href="/development/testing"
+  >
+    Write and run tests
+  </Card>
+  <Card
+    title="Offline Tools"
+    icon="toolbox"
+    href="/development/offline-tools"
+  >
+    Work with game assets
+  </Card>
+</CardGroup>
+
+## Getting Help
+
+If you encounter issues:
+
+- Check existing [GitHub Issues](https://github.com/doublemover/LemmingsJS-MIDI/issues)
+- Review the [docs/](https://github.com/doublemover/LemmingsJS-MIDI/tree/main/docs) directory in the repository
+- Open a new issue with details about your environment and the problem
+
+<Warning>
+  This repository is for local development only. Do not publish the package to npm or other registries.
+</Warning>

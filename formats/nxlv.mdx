@@ -1,0 +1,449 @@
+---
+title: NeoLemmix Level Format (.nxlv)
+description: Complete specification for NeoLemmix V12 text-based level files
+---
+
+## Overview
+
+The `.nxlv` format is the current standard for NeoLemmix and SuperLemmix levels (V12+). It replaced the legacy binary `.lvl` format with a human-readable, plain-text structure using UTF-8 encoding.
+
+<Info>
+NeoLemmix V12+ uses **directory packs** with `.nxlv` files instead of the older `.NXP` archives. Legacy packs can be converted using **NXPConvert**.
+</Info>
+
+| Era | File Format | Use Case | Notes |
+| --- | --- | --- | --- |
+| **V12 (current)** | `.nxlv` plain-text + directory packs | All modern NeoLemmix/SuperLemmix content | Human-readable, UTF-8, no compression |
+| V1-V11 | 4 KB "new-format" `.lvl` | Legacy packs in `.NXP` archives | Binary header + section blocks |
+| DOS/early Lemmix | 2 KB / 10 KB `.lvl` | Historical only | Superseded but still accepted |
+
+---
+
+## Syntax Rules
+
+NeoLemmix text levels follow a simple key-value structure:
+
+```text
+KEYWORD value          # One space only
+$SECTION               # Begin group
+  KEY value
+$END                   # End group
+# Lines starting with # are comments
+```
+
+<Note>
+- Decimals or hexadecimal values (prefixed with `x`) are accepted
+- Filenames are **case-sensitive** on *nix systems
+- One space separates keys from values
+</Note>
+
+---
+
+## Header Keys
+
+All header keys are order-insensitive and appear at the top of the file.
+
+<ParamField path="TITLE" type="string">
+  Level title displayed in the level select menu
+</ParamField>
+
+<ParamField path="AUTHOR" type="string">
+  Creator's name or handle
+</ParamField>
+
+<ParamField path="VERSION" type="string">
+  Version identifier for level revisions
+</ParamField>
+
+<ParamField path="ID" type="string">
+  Unique identifier for the level
+</ParamField>
+
+<ParamField path="THEME" type="string">
+  Default menu style theme
+</ParamField>
+
+<ParamField path="MUSIC" type="string">
+  Music track configuration. Supports:
+  - Single filename: `MUSIC track_name`
+  - Index reference: `MUSIC ?n` (references nth track from pack's music list)
+  - Multiple tracks: `MUSIC a;b;c` (plays first available)
+  - Random choice: `MUSIC !a;b;c` (randomly selects from list)
+</ParamField>
+
+<ParamField path="LEMMINGS" type="integer">
+  Total number of lemmings that spawn in the level
+</ParamField>
+
+<ParamField path="SAVE_REQUIREMENT" type="integer">
+  Number of lemmings that must be saved to win
+</ParamField>
+
+<ParamField path="TIME_LIMIT" type="integer | INFINITE">
+  Time limit in seconds, or `INFINITE` for no time limit
+</ParamField>
+
+<ParamField path="MAX_SPAWN_INTERVAL" type="integer">
+  Maximum spawn rate (1-99). Lower values = faster spawning
+</ParamField>
+
+<ParamField path="SPAWN_INTERVAL_LOCKED" type="boolean">
+  When true, prevents player from changing spawn rate
+</ParamField>
+
+<ParamField path="WIDTH" type="integer">
+  Level width in pixels
+</ParamField>
+
+<ParamField path="HEIGHT" type="integer">
+  Level height in pixels
+</ParamField>
+
+<ParamField path="START_X" type="integer">
+  Initial viewport X position
+</ParamField>
+
+<ParamField path="START_Y" type="integer">
+  Initial viewport Y position
+</ParamField>
+
+<ParamField path="BACKGROUND" type="string">
+  Background image filename (optional)
+</ParamField>
+
+---
+
+## Main Sections
+
+### $SKILLSET
+
+Defines available skills and their counts.
+
+```text
+$SKILLSET
+  SKILL CLIMBER 10
+  SKILL FLOATER 10
+  SKILL BOMBER 5
+  SKILL BLOCKER 3
+  SKILL BUILDER 15
+  SKILL BASHER 10
+  SKILL MINER 8
+  SKILL DIGGER 12
+$END
+```
+
+<ParamField path="SKILL" type="string integer | INFINITE">
+  Format: `SKILL <skill_name> <count>` or `SKILL <skill_name> INFINITE`
+  
+  Available skills: CLIMBER, FLOATER, BOMBER, BLOCKER, BUILDER, BASHER, MINER, DIGGER, plus extended skills (PLATFORMER, STACKER, SHIMMIER, etc.)
+</ParamField>
+
+<Warning>
+The CLONER skill cannot be set to INFINITE.
+</Warning>
+
+---
+
+### $TERRAIN
+
+Defines terrain pieces that form the level's landscape.
+
+```text
+$TERRAIN
+  STYLE dirt
+  PIECE ground_01
+  X 128
+  Y 64
+  FLIP_VERTICAL
+  NO_OVERWRITE
+$END
+```
+
+<ParamField path="STYLE" type="string" required>
+  Graphic style/set name (e.g., "dirt", "fire", "crystal")
+</ParamField>
+
+<ParamField path="PIECE" type="string" required>
+  Terrain piece identifier from the style
+</ParamField>
+
+<ParamField path="X" type="integer" required>
+  Horizontal position in pixels (negative values allowed)
+</ParamField>
+
+<ParamField path="Y" type="integer" required>
+  Vertical position in pixels (negative values allowed)
+</ParamField>
+
+<ParamField path="ROTATE" type="0 | 90 | 180 | 270">
+  Rotation angle in degrees
+</ParamField>
+
+<ParamField path="FLIP_HORIZONTAL" type="boolean">
+  Mirror the piece horizontally
+</ParamField>
+
+<ParamField path="FLIP_VERTICAL" type="boolean">
+  Mirror the piece vertically
+</ParamField>
+
+<ParamField path="NO_OVERWRITE" type="boolean">
+  Prevent this terrain from overwriting existing terrain
+</ParamField>
+
+<ParamField path="ERASE" type="boolean">
+  Remove terrain instead of adding it
+</ParamField>
+
+<ParamField path="ONE_WAY" type="boolean">
+  Mark terrain as one-way (blocks digging from certain directions)
+</ParamField>
+
+<ParamField path="WIDTH" type="integer">
+  Custom width for resizable pieces
+</ParamField>
+
+<ParamField path="HEIGHT" type="integer">
+  Custom height for resizable pieces
+</ParamField>
+
+---
+
+### $GADGET
+
+Defines interactive objects like exits, entrances, traps, and hazards.
+
+```text
+$GADGET
+  STYLE dirt
+  PIECE exit
+  X 1400
+  Y 80
+$END
+```
+
+<ParamField path="STYLE" type="string" required>
+  Graphic style/set name
+</ParamField>
+
+<ParamField path="PIECE" type="string" required>
+  Gadget piece identifier (e.g., "exit", "entrance", "trap_bear")
+</ParamField>
+
+<ParamField path="X" type="integer" required>
+  Horizontal position in pixels
+</ParamField>
+
+<ParamField path="Y" type="integer" required>
+  Vertical position in pixels
+</ParamField>
+
+<ParamField path="ROTATE" type="0 | 90 | 180 | 270">
+  Rotation angle in degrees
+</ParamField>
+
+<ParamField path="FLIP_HORIZONTAL" type="boolean">
+  Mirror the gadget horizontally
+</ParamField>
+
+<ParamField path="FLIP_VERTICAL" type="boolean">
+  Mirror the gadget vertically
+</ParamField>
+
+<ParamField path="WIDTH" type="integer">
+  Custom width for resizable gadgets
+</ParamField>
+
+<ParamField path="HEIGHT" type="integer">
+  Custom height for resizable gadgets
+</ParamField>
+
+<ParamField path="LEMMINGS" type="integer">
+  For entrances: number of lemmings spawned from this entrance
+</ParamField>
+
+<ParamField path="SKILL" type="string">
+  For pickup objects: skill granted when collected
+</ParamField>
+
+<ParamField path="PAIRING" type="integer">
+  Links related gadgets (e.g., teleporter pairs)
+</ParamField>
+
+---
+
+### $TERRAINGROUP
+
+Groups multiple terrain pieces together, typically for steel areas.
+
+```text
+$TERRAINGROUP
+  $TERRAIN
+    STYLE dirt
+    PIECE steel_01
+    X 200
+    Y 100
+  $END
+  $TERRAIN
+    STYLE dirt
+    PIECE steel_02
+    X 232
+    Y 100
+  $END
+$END
+```
+
+<Warning>
+All terrain in a `$TERRAINGROUP` must be either all-steel or all non-steel. Mixed groups are not allowed.
+</Warning>
+
+---
+
+### $LEMMING
+
+Defines pre-placed lemmings with special attributes.
+
+```text
+$LEMMING
+  X 300
+  Y 50
+  CLIMBER
+  FLOATER
+$END
+```
+
+<ParamField path="X" type="integer" required>
+  Horizontal spawn position
+</ParamField>
+
+<ParamField path="Y" type="integer" required>
+  Vertical spawn position
+</ParamField>
+
+<ParamField path="ZOMBIE" type="boolean">
+  Spawns as a zombie lemming
+</ParamField>
+
+Additional flags: `CLIMBER`, `FLOATER`, `GLIDER`, `DISARMER`, `NEUTRAL`, etc.
+
+---
+
+### $TALISMAN
+
+Defines optional challenge conditions for bonus achievements.
+
+```text
+$TALISMAN
+  TITLE Complete without Climbers
+  ID no_climbers_01
+  COLOR GOLD
+  SAVE_REQUIREMENT 100%
+  SKILL CLIMBER 0
+$END
+```
+
+<ParamField path="TITLE" type="string" required>
+  Display name for the talisman
+</ParamField>
+
+<ParamField path="ID" type="string" required>
+  Unique identifier
+</ParamField>
+
+<ParamField path="COLOR" type="BRONZE | SILVER | GOLD">
+  Talisman tier/color
+</ParamField>
+
+Goal modifiers: `SAVE_REQUIREMENT`, skill limits, `TIME_LIMIT`, etc.
+
+---
+
+### $PRETEXT / $POSTTEXT
+
+Displays text messages before or after the level.
+
+```text
+$PRETEXT
+  LINE Welcome to the Crystal Caverns!
+  LINE Use [HOTKEY:Builder] to build bridges.
+$END
+```
+
+<ParamField path="LINE" type="string">
+  A single line of text. Supports `[HOTKEY:skill_name]` macros for dynamic key display.
+</ParamField>
+
+---
+
+## Visibility Rules
+
+<Note>
+Only files and sub-groups explicitly listed in the nearest `levels.nxmi` file are shown in-game. Unlisted levels remain hidden but can still be shipped with the pack.
+</Note>
+
+---
+
+## LemmingsJS-MIDI Editor Subset
+
+The LemmingsJS-MIDI editor targets a subset of the `.nxlv` format compatible with classic Lemmings rendering.
+
+### Supported Header Keys
+
+- `TITLE`, `AUTHOR`, `VERSION`, `ID`
+- `STYLE` (mapped via style registry)
+- `MUSIC` (filename or `?n` index)
+- `LEMMINGS`, `SAVE_REQUIREMENT`, `TIME_LIMIT`
+- `MAX_SPAWN_INTERVAL`, `SPAWN_INTERVAL_LOCKED`
+- `WIDTH`, `HEIGHT` (initially fixed to 1600×160)
+- `START_X`, `START_Y`
+
+### Classic Skills Only
+
+```text
+$SKILLSET
+  SKILL CLIMBER 0
+  SKILL FLOATER 0
+  SKILL BOMBER  0
+  SKILL BLOCKER 0
+  SKILL BUILDER 0
+  SKILL BASHER  0
+  SKILL MINER   0
+  SKILL DIGGER  0
+$END
+```
+
+<Info>
+`INFINITE` skill counts are stored as 6039 seconds (99:99) in the classic runtime.
+</Info>
+
+### Terrain Mapping
+
+- `STYLE` resolves via style registry to classic ground set
+- `PIECE` maps to numeric terrain ID (0-63)
+- `FLIP_VERTICAL` → `DrawProperties.isUpsideDown`
+- `NO_OVERWRITE` → `DrawProperties.noOverwrite`
+- `ERASE` → `DrawProperties.isErase`
+
+<Warning>
+Horizontal flips and arbitrary rotations are not supported by classic DAT sprites and will be ignored unless compatible.
+</Warning>
+
+### Gadget Mapping
+
+- Classic object IDs: 0-15 from `GROUNDxO.DAT`
+- Entrance = object ID 1, Exit = object ID 0
+- Trigger behavior maps via `trigger_effect_id`
+
+### Steel Areas
+
+Steel terrain is written inside `$TERRAINGROUP` sections marked `STEEL` and maintains classic steel rectangles for the runtime steel mask.
+
+### Unsupported (Initially)
+
+- `$LEMMING` pre-placed lemmings
+- `$TALISMAN` achievements
+- `$PRETEXT` / `$POSTTEXT`
+- Gimmicks (zombies, rising water, etc.)
+- High-resolution styles (`-hr`) and alias resolution
+
+Unsupported values are preserved on load/save where possible.

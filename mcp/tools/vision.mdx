@@ -1,0 +1,308 @@
+---
+title: Vision Capture
+description: Capture screenshots and frame sequences from the game
+---
+
+## vision.capture
+
+Capture a screenshot of the page, canvas, or a specific rectangle.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="target" type="enum<'page' | 'gameCanvas' | 'guiCanvas' | 'stageCanvas' | 'rect'>" default="page" optional>
+  What to capture:
+  - `page`: Full page viewport
+  - `gameCanvas`: Game canvas layer (gameplay area)
+  - `guiCanvas`: GUI canvas layer (buttons, counters)
+  - `stageCanvas`: Complete stage canvas (game + GUI)
+  - `rect`: Custom rectangle (requires `rect` parameter)
+</ParamField>
+
+<ParamField path="rect" type="object" optional>
+  Rectangle to capture (required when `target` is `rect`, optional for canvas targets to crop).
+  <ParamField path="rect.x" type="number" required>
+    X coordinate.
+  </ParamField>
+  <ParamField path="rect.y" type="number" required>
+    Y coordinate.
+  </ParamField>
+  <ParamField path="rect.width" type="number" required>
+    Width in pixels.
+  </ParamField>
+  <ParamField path="rect.height" type="number" required>
+    Height in pixels.
+  </ParamField>
+</ParamField>
+
+<ParamField path="format" type="enum<'png' | 'jpeg' | 'webp'>" default="png" optional>
+  Image format.
+</ParamField>
+
+<ParamField path="delivery" type="enum<'resource' | 'inline'>" default="resource" optional>
+  How to return the image:
+  - `resource`: Store as a resource and return URI
+  - `inline`: Return base64-encoded data inline
+</ParamField>
+
+<ParamField path="tag" type="string" optional>
+  Optional tag for organizing captures.
+</ParamField>
+
+### Response
+
+<ResponseField name="frame" type="object" required>
+  Frame metadata and image data.
+  <ResponseField name="frame.id" type="string" required>
+    Unique frame identifier.
+  </ResponseField>
+  <ResponseField name="frame.mimeType" type="string" required>
+    Image MIME type (e.g., `image/png`).
+  </ResponseField>
+  <ResponseField name="frame.width" type="integer" required>
+    Image width in pixels.
+  </ResponseField>
+  <ResponseField name="frame.height" type="integer" required>
+    Image height in pixels.
+  </ResponseField>
+  <ResponseField name="frame.tickIndex" type="integer | null" required>
+    Tick index when capture was taken.
+  </ResponseField>
+  <ResponseField name="frame.takenAt" type="string" required>
+    ISO 8601 timestamp.
+  </ResponseField>
+  <ResponseField name="frame.target" type="string" required>
+    The target that was captured.
+  </ResponseField>
+  <ResponseField name="frame.tag" type="string" optional>
+    Tag if provided.
+  </ResponseField>
+  <ResponseField name="frame.clip" type="object" optional>
+    Clip rectangle if used.
+  </ResponseField>
+  <ResponseField name="frame.resourceUri" type="string" optional>
+    Resource URI (when `delivery` is `resource`).
+  </ResponseField>
+  <ResponseField name="frame.sizeBytes" type="integer" optional>
+    Image size in bytes (when `delivery` is `resource`).
+  </ResponseField>
+  <ResponseField name="frame.expiresAt" type="string" optional>
+    ISO 8601 expiration timestamp (when `delivery` is `resource`).
+  </ResponseField>
+  <ResponseField name="frame.dataBase64" type="string" optional>
+    Base64-encoded image data (when `delivery` is `inline`).
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Resource Delivery Request
+{
+  "sessionId": "abc123def456",
+  "target": "stageCanvas",
+  "format": "jpeg",
+  "delivery": "resource",
+  "tag": "level-state"
+}
+```
+
+```json Response
+{
+  "frame": {
+    "id": "xyz789abc",
+    "mimeType": "image/jpeg",
+    "width": 1280,
+    "height": 720,
+    "tickIndex": 1247,
+    "takenAt": "2026-03-04T12:34:56.789Z",
+    "target": "stageCanvas",
+    "tag": "level-state",
+    "resourceUri": "lemmings://sessions/abc123def456/resources/xyz789abc",
+    "sizeBytes": 87234,
+    "expiresAt": "2026-03-04T12:44:56.789Z"
+  }
+}
+```
+
+```json Inline Delivery Request
+{
+  "sessionId": "abc123def456",
+  "target": "gameCanvas",
+  "format": "png",
+  "delivery": "inline"
+}
+```
+
+```json Response
+{
+  "frame": {
+    "id": "abc123xyz",
+    "mimeType": "image/png",
+    "width": 1280,
+    "height": 720,
+    "tickIndex": 1247,
+    "takenAt": "2026-03-04T12:34:56.789Z",
+    "target": "gameCanvas",
+    "dataBase64": "iVBORw0KGgoAAAANSUhEUgAA..."
+  }
+}
+```
+</CodeGroup>
+
+<Note>
+  Use `resource` delivery for large images to avoid token overhead. Resources are stored with a TTL (default 10 minutes) and can be retrieved via the MCP resource protocol.
+</Note>
+
+---
+
+## vision.captureSequence
+
+Capture multiple frames across time using step or sample mode.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="mode" type="enum<'step' | 'sample'>" required>
+  Capture mode:
+  - `step`: Pause and step through ticks (deterministic)
+  - `sample`: Capture while running at intervals (non-deterministic)
+</ParamField>
+
+<ParamField path="frames" type="integer" required>
+  Number of frames to capture.
+</ParamField>
+
+<ParamField path="stepBy" type="integer" default="1" optional>
+  Ticks to step between frames (only for `step` mode).
+</ParamField>
+
+<ParamField path="everyMs" type="integer" default="250" optional>
+  Milliseconds between captures (only for `sample` mode).
+</ParamField>
+
+<ParamField path="capture" type="object" optional>
+  Capture options (same as `vision.capture` but without `sessionId`).
+  <ParamField path="capture.target" type="string" optional>
+    Capture target.
+  </ParamField>
+  <ParamField path="capture.format" type="string" optional>
+    Image format.
+  </ParamField>
+  <ParamField path="capture.delivery" type="string" optional>
+    Delivery mode.
+  </ParamField>
+  <ParamField path="capture.tag" type="string" optional>
+    Tag for frames.
+  </ParamField>
+</ParamField>
+
+<ParamField path="returnManifest" type="boolean" default="true" optional>
+  Return a manifest resource with all frame metadata.
+</ParamField>
+
+### Response
+
+<ResponseField name="sequenceId" type="string" required>
+  Unique identifier for this capture sequence.
+</ResponseField>
+
+<ResponseField name="frames" type="array<object>" required>
+  Array of frame objects (same structure as `vision.capture` response).
+</ResponseField>
+
+<ResponseField name="manifestResourceUri" type="string | null" required>
+  URI for the JSON manifest resource (if `returnManifest` is true).
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Step Mode Request
+{
+  "sessionId": "abc123def456",
+  "mode": "step",
+  "frames": 10,
+  "stepBy": 5,
+  "capture": {
+    "target": "stageCanvas",
+    "format": "jpeg",
+    "delivery": "resource"
+  }
+}
+```
+
+```json Response
+{
+  "sequenceId": "seq-xyz789",
+  "frames": [
+    {
+      "id": "frame-001",
+      "mimeType": "image/jpeg",
+      "width": 1280,
+      "height": 720,
+      "tickIndex": 1247,
+      "takenAt": "2026-03-04T12:34:56.789Z",
+      "target": "stageCanvas",
+      "resourceUri": "lemmings://sessions/abc123def456/resources/frame-001",
+      "sizeBytes": 87234
+    },
+    {
+      "id": "frame-002",
+      "tickIndex": 1252,
+      "resourceUri": "lemmings://sessions/abc123def456/resources/frame-002",
+      "sizeBytes": 88156
+    }
+  ],
+  "manifestResourceUri": "lemmings://sessions/abc123def456/resources/manifest-seq-xyz789"
+}
+```
+
+```json Sample Mode Request
+{
+  "sessionId": "abc123def456",
+  "mode": "sample",
+  "frames": 20,
+  "everyMs": 100,
+  "capture": {
+    "target": "gameCanvas",
+    "format": "png",
+    "delivery": "resource"
+  },
+  "returnManifest": false
+}
+```
+
+```json Response
+{
+  "sequenceId": "seq-abc456",
+  "frames": [
+    { "id": "frame-001", "tickIndex": 1247, "resourceUri": "lemmings://sessions/abc123def456/resources/frame-001" },
+    { "id": "frame-002", "tickIndex": 1253, "resourceUri": "lemmings://sessions/abc123def456/resources/frame-002" }
+  ],
+  "manifestResourceUri": null
+}
+```
+</CodeGroup>
+
+<Note>
+  Use `step` mode for deterministic frame capture (game is paused between captures). Use `sample` mode for real-time capture during gameplay.
+</Note>
+
+<Warning>
+  Capture sequences with many frames can consume significant resource storage. Monitor the `sizeBytes` in responses and adjust TTL settings if needed.
+</Warning>

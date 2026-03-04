@@ -1,0 +1,374 @@
+---
+title: Lemming Control
+description: Query lemming summaries, select lemmings, and apply skills
+---
+
+## lemming.summary
+
+Return aggregated lemming summary data with configurable filtering and top-K selection.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="filter" type="object" optional>
+  Filtering options.
+  <ParamField path="filter.activeOnly" type="boolean" default="true" optional>
+    Only include active lemmings (not removed or disabled).
+  </ParamField>
+  <ParamField path="filter.inViewOnly" type="boolean" optional>
+    Only include lemmings in the current viewport.
+  </ParamField>
+  <ParamField path="filter.rectWorld" type="object" optional>
+    Filter to lemmings within a world-space rectangle.
+    <ParamField path="filter.rectWorld.x" type="number" required>
+      Rectangle X coordinate.
+    </ParamField>
+    <ParamField path="filter.rectWorld.y" type="number" required>
+      Rectangle Y coordinate.
+    </ParamField>
+    <ParamField path="filter.rectWorld.width" type="number" optional>
+      Rectangle width (can also use `w`).
+    </ParamField>
+    <ParamField path="filter.rectWorld.height" type="number" optional>
+      Rectangle height (can also use `h`).
+    </ParamField>
+  </ParamField>
+</ParamField>
+
+<ParamField path="topK" type="integer" default="10" optional>
+  Number of top lemmings to return. Prioritizes lemmings with active countdowns, then rightmost position.
+</ParamField>
+
+<ParamField path="includeSelected" type="boolean" optional>
+  Include the currently selected lemming (will be added to top array if not already present).
+</ParamField>
+
+### Response
+
+<ResponseField name="tickIndex" type="integer | null" required>
+  Current tick index.
+</ResponseField>
+
+<ResponseField name="selectedLemmingId" type="integer | null" required>
+  ID of the currently selected lemming, or null.
+</ResponseField>
+
+<ResponseField name="totalCount" type="integer" required>
+  Total lemmings matching the filter.
+</ResponseField>
+
+<ResponseField name="activeCount" type="integer" required>
+  Active lemmings (not removed or disabled).
+</ResponseField>
+
+<ResponseField name="removedCount" type="integer" required>
+  Removed lemmings.
+</ResponseField>
+
+<ResponseField name="disabledCount" type="integer" required>
+  Disabled lemmings.
+</ResponseField>
+
+<ResponseField name="byActionType" type="object" required>
+  Histogram of lemmings by action type code.
+</ResponseField>
+
+<ResponseField name="byState" type="object" required>
+  Histogram of lemmings by state code.
+</ResponseField>
+
+<ResponseField name="climbers" type="integer" required>
+  Lemmings with climb ability.
+</ResponseField>
+
+<ResponseField name="floaters" type="integer" required>
+  Lemmings with parachute ability.
+</ResponseField>
+
+<ResponseField name="countingDown" type="integer" required>
+  Lemmings with active countdown (bombers).
+</ResponseField>
+
+<ResponseField name="exploded" type="integer" required>
+  Lemmings that have exploded.
+</ResponseField>
+
+<ResponseField name="selected" type="object | null" required>
+  Full lemming object for the selected lemming (if `includeSelected` is true).
+</ResponseField>
+
+<ResponseField name="top" type="array<object>" required>
+  Array of top K lemming objects.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "sessionId": "abc123def456",
+  "filter": {
+    "activeOnly": true,
+    "inViewOnly": true
+  },
+  "topK": 5,
+  "includeSelected": true
+}
+```
+
+```json Response
+{
+  "tickIndex": 1247,
+  "selectedLemmingId": 12,
+  "totalCount": 50,
+  "activeCount": 45,
+  "removedCount": 5,
+  "disabledCount": 0,
+  "byActionType": {
+    "0": 30,
+    "1": 10,
+    "2": 5
+  },
+  "byState": {
+    "0": 40,
+    "1": 5
+  },
+  "climbers": 3,
+  "floaters": 2,
+  "countingDown": 1,
+  "exploded": 2,
+  "selected": {
+    "id": 12,
+    "x": 450,
+    "y": 80,
+    "lookRight": true,
+    "frameIndex": 3,
+    "state": 0,
+    "actionType": 0,
+    "canClimb": false,
+    "hasParachute": false,
+    "removed": false,
+    "disabled": false
+  },
+  "top": [
+    { "id": 12, "x": 450, "y": 80, "state": 0, "actionType": 0 },
+    { "id": 18, "x": 445, "y": 82, "state": 0, "actionType": 1, "countdownActive": true, "countdown": 25 },
+    { "id": 15, "x": 440, "y": 78, "state": 0, "actionType": 0 }
+  ]
+}
+```
+</CodeGroup>
+
+<Note>
+  Use `lemming.summary` to get an overview of lemming states without fetching all individual lemming data. The `topK` sorting prioritizes lemmings with countdowns (bombers) first, then rightmost position.
+</Note>
+
+---
+
+## lemming.select
+
+Select a lemming by ID via the E2E harness.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="lemmingId" type="integer" required>
+  Lemming ID to select (array index in the lemmings array).
+</ParamField>
+
+<ParamField path="alsoCenterView" type="boolean" optional>
+  Automatically center the viewport on the selected lemming.
+</ParamField>
+
+<ParamField path="confirm" type="boolean" default="true" optional>
+  Fetch and return the selected index after selection to confirm success.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Operation success status.
+</ResponseField>
+
+<ResponseField name="lemmingId" type="integer" required>
+  The lemming ID that was requested.
+</ResponseField>
+
+<ResponseField name="selectedNow" type="integer | null" optional>
+  The currently selected lemming index after selection (if `confirm` is true).
+</ResponseField>
+
+<ResponseField name="reason" type="string" optional>
+  Failure reason if `ok` is false: `harness_unavailable`, `not_found`, `removed`, or `disabled`.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "sessionId": "abc123def456",
+  "lemmingId": 12,
+  "alsoCenterView": true,
+  "confirm": true
+}
+```
+
+```json Success Response
+{
+  "ok": true,
+  "lemmingId": 12,
+  "selectedNow": 12
+}
+```
+
+```json Failure Response
+{
+  "ok": false,
+  "lemmingId": 99,
+  "reason": "not_found"
+}
+```
+</CodeGroup>
+
+<Warning>
+  Selecting a removed or disabled lemming will fail. Check lemming status via `lemming.summary` or `state.get` before attempting to select.
+</Warning>
+
+---
+
+## skill.apply
+
+Apply a skill to a selected lemming using keybindings. Optionally verify the skill was applied successfully.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="skill" type="enum<'climber' | 'floater' | 'bomber' | 'blocker' | 'builder' | 'basher' | 'miner' | 'digger'>" required>
+  Skill name to apply.
+</ParamField>
+
+<ParamField path="lemmingId" type="integer" optional>
+  Lemming ID to select and apply skill to. If omitted, applies to currently selected lemming.
+</ParamField>
+
+<ParamField path="ensurePaused" type="boolean" default="true" optional>
+  Automatically pause before applying skill.
+</ParamField>
+
+<ParamField path="requireAvailable" type="boolean" optional>
+  Check that the skill is available before applying (not exhausted).
+</ParamField>
+
+<ParamField path="postStep" type="integer" default="1" optional>
+  Number of ticks to step forward after applying skill (use 0 to skip stepping).
+</ParamField>
+
+<ParamField path="verify" type="boolean" default="true" optional>
+  Verify the skill was applied by checking field changes.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Operation success status.
+</ResponseField>
+
+<ResponseField name="skill" type="string" required>
+  The skill that was requested.
+</ResponseField>
+
+<ResponseField name="lemmingIdAppliedTo" type="integer | null" required>
+  The lemming ID the skill was applied to.
+</ResponseField>
+
+<ResponseField name="tickIndexBefore" type="integer | null" optional>
+  Tick index before skill application (if `verify` or `requireAvailable` is true).
+</ResponseField>
+
+<ResponseField name="tickIndexAfter" type="integer | null" optional>
+  Tick index after skill application and stepping (if `verify` is true).
+</ResponseField>
+
+<ResponseField name="verification" type="object" optional>
+  Verification results (if `verify` is true).
+  <ResponseField name="verification.applied" type="boolean">
+    Whether the skill was successfully applied (field changes detected).
+  </ResponseField>
+  <ResponseField name="verification.changedFields" type="array<string>">
+    Fields that changed (e.g., `['canClimb']`, `['actionType']`).
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="reason" type="string" optional>
+  Failure reason if `ok` is false: `unknown_skill`, `no_skill_remaining`, `select_failed`, `missing_binding`.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "sessionId": "abc123def456",
+  "skill": "builder",
+  "lemmingId": 12,
+  "requireAvailable": true,
+  "verify": true
+}
+```
+
+```json Success Response
+{
+  "ok": true,
+  "skill": "builder",
+  "lemmingIdAppliedTo": 12,
+  "tickIndexBefore": 1247,
+  "tickIndexAfter": 1248,
+  "verification": {
+    "applied": true,
+    "changedFields": ["actionType"]
+  }
+}
+```
+
+```json Failure Response (No Skill Remaining)
+{
+  "ok": false,
+  "skill": "builder",
+  "reason": "no_skill_remaining"
+}
+```
+</CodeGroup>
+
+<Note>
+  The verification logic checks for skill-specific field changes:
+  - `climber`: Checks for `canClimb` transition from false to true
+  - `floater`: Checks for `hasParachute` transition from false to true
+  - `bomber`: Checks for `countdownActive` transition from false to true
+  - Other skills: Checks for `actionType` change
+</Note>
+
+<Warning>
+  Skill application requires valid keybindings. If the action is not found in keybindings.json, the operation will fail with `missing_binding`.
+</Warning>

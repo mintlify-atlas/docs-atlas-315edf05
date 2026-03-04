@@ -1,0 +1,170 @@
+---
+title: Introduction
+description: Welcome to LemmingsJS-MIDI - a high-performance JavaScript port of Lemmings with WebMIDI sequencing support
+---
+
+<img
+  className="block dark:hidden"
+  src="https://github.com/user-attachments/assets/291d0c6a-ca2e-4de1-bee7-5c0cfb169ae9"
+  alt="LemmingsJS-MIDI Hero"
+/>
+<img
+  className="hidden dark:block"
+  src="https://github.com/user-attachments/assets/291d0c6a-ca2e-4de1-bee7-5c0cfb169ae9"
+  alt="LemmingsJS-MIDI Hero"
+/>
+
+## Overview
+
+LemmingsJS-MIDI is a faithful, high-performance JavaScript port of the classic Lemmings game with modern enhancements. Built for the browser, it combines accurate game mechanics with powerful features for creators, musicians, and AI developers.
+
+<CardGroup cols={2}>
+  <Card
+    title="Play in Browser"
+    icon="gamepad"
+    href="https://doublemover.github.io/LemmingsJS-MIDI/"
+  >
+    Jump straight into the game - no installation required
+  </Card>
+  <Card
+    title="Level Editor"
+    icon="pen-to-square"
+    href="https://doublemover.github.io/LemmingsJS-MIDI/editor.html"
+  >
+    Create and edit levels with the full-featured online editor
+  </Card>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/quick-start"
+  >
+    Get playing in seconds with our quick start guide
+  </Card>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Set up a local development environment
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Extreme Performance" icon="gauge-high">
+    Run 25M+ simultaneous lemmings at 60x original game speed with backwards playback support
+  </Card>
+  
+  <Card title="Full-Featured Editor" icon="paintbrush">
+    Create levels with undo/redo, import/export for .nxlv and .lvl formats, and instant playtest mode
+  </Card>
+  
+  <Card title="WebMIDI Sequencing" icon="music">
+    Real-time MIDI routing, input mapping, and procedural music generation from game events
+  </Card>
+  
+  <Card title="AI Automation" icon="robot">
+    MCP server with state inspection, vision capture via Playwright, and interactive spectator mode
+  </Card>
+  
+  <Card title="Time Travel" icon="clock-rotate-left">
+    Tick-by-tick stepping, reverse playback, and full timeline manipulation
+  </Card>
+  
+  <Card title="Procedural Generation" icon="wand-magic-sparkles">
+    AI director for dynamic level generation and adaptive gameplay
+  </Card>
+  
+  <Card title="Progressive Web App" icon="mobile-screen">
+    Install as a PWA with offline support and fullscreen landscape mode
+  </Card>
+  
+  <Card title="99.51% Test Coverage" icon="check-double">
+    Comprehensive test suite with 100% coverage for critical editor code
+  </Card>
+</CardGroup>
+
+## What Makes It Special
+
+### Accuracy Meets Performance
+
+LemmingsJS-MIDI faithfully recreates the original Lemmings mechanics while achieving unprecedented performance. The engine can handle over 25 million simultaneous lemmings and run at speeds exceeding 60x the original game.
+
+<Info>
+  The engine includes steel terrain accuracy improvements and supports multiple Lemmings versions including Oh No! More Lemmings and various holiday editions.
+</Info>
+
+### Creative Tools
+
+The built-in level editor provides professional-grade features:
+
+- **Multi-select** with Shift-click or marquee selection
+- **Clone objects** with Alt-drag
+- **Full undo/redo** support
+- **Level validation** to catch missing requirements
+- **Import/export** for both .nxlv and classic .lvl formats
+
+### MIDI Integration
+
+Transform gameplay into music with the WebMIDI sequencer:
+
+- Route game events to MIDI notes and chords
+- Map lemming positions to velocity and timbre
+- Configure ADSR envelopes per sound effect
+- Control game speed and actions via MIDI input
+- Real-time BPM syncing with configurable time signatures
+
+### AI-Ready Architecture
+
+The MCP (Model Context Protocol) server enables AI agents to:
+
+- Inspect full game state via JSON
+- Control lemmings and assign skills
+- Capture vision via Playwright sessions
+- Watch and assist in spectator mode
+- Edit and test levels programmatically
+
+## Version Coverage
+
+LemmingsJS-MIDI supports multiple official Lemmings releases:
+
+- **Lemmings** (original)
+- **Oh no! More Lemmings**
+- **Xmas 1991**
+- **Xmas 1992**
+- **Holiday 1993**
+- **Holiday 1994**
+
+Each version includes authentic levels, graphics, and mechanics.
+
+## Get Started
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick Start"
+    icon="person-running"
+    href="/quick-start"
+  >
+    Play immediately in your browser
+  </Card>
+  <Card
+    title="Local Installation"
+    icon="code"
+    href="/installation"
+  >
+    Set up for development and offline use
+  </Card>
+</CardGroup>
+
+## Community and Support
+
+Found an issue or want to contribute?
+
+- **GitHub Repository**: [doublemover/LemmingsJS-MIDI](https://github.com/doublemover/LemmingsJS-MIDI)
+- **Report Issues**: [GitHub Issues](https://github.com/doublemover/LemmingsJS-MIDI/issues)
+- **Contributing Guide**: See [CONTRIBUTING.md](https://github.com/doublemover/LemmingsJS-MIDI/blob/main/CONTRIBUTING.md)
+
+<Note>
+  This project builds on the work of the Lemmings community, archivists, and previous ports. Special thanks to the Lemmings Forums, Camanis.net Archives, and oklemenz/LemmingsJS.
+</Note>

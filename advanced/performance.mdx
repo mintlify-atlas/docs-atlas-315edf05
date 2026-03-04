@@ -1,0 +1,266 @@
+---
+title: Performance Tuning
+description: Performance benchmarks, optimization techniques, and capacity testing
+---
+
+## Overview
+
+LemmingsJS-MIDI is built for high performance, capable of simulating over 25 million lemmings simultaneously and running at speeds exceeding 60x the original game.
+
+## Performance Highlights
+
+- **25,000,000+ simultaneous lemmings** supported
+- **>60x original game speed** with 450,000 active lemmings
+- **Full-speed reverse playback** with minimal overhead
+- **99.51% test coverage** ensuring reliability
+
+## Benchmark Modes
+
+The project includes multiple benchmark modes for performance testing. These should be driven through the E2E harness for consistent results.
+
+### Available Modes
+
+#### `bench`
+
+Spawns extra entrances and adjusts speed to maintain a steady tick cadence.
+
+- **Use case**: Checking raw lemming throughput in a single level
+- **URL**: `?bench=1` or `?b=1`
+- **Metrics**: Active lemmings, spawned count, TPS (ticks per second)
+
+#### `bench2`
+
+Catchup-focused mode that slows down when RAF (RequestAnimationFrame) falls behind.
+
+- **Use case**: Spotting performance spikes that trigger the failsafe in `GameTimer`
+- **Best for**: Verifying catchup slowdown behavior
+
+#### `benchSequence`
+
+Runs a sequence of entrance counts and extra lemming loads.
+
+- **Use case**: Broader performance sweeps across different configurations
+- **Default mode** for comprehensive testing
+
+#### `benchReverse`
+
+Bench mode with reverse playback enabled.
+
+- **Use case**: Time-travel rendering costs and reverse history application
+- **Measures**: Reverse playback overhead
+
+## Running Benchmarks
+
+### Via E2E Harness
+
+Recommended workflow for consistent, reproducible results:
+
+```bash
+# Run benchmark sequence
+npm run bench-performance -- --mode=sequence
+```
+
+The script outputs JSON with:
+- Max TPS (ticks per second)
+- Max speed achieved
+- Per-sample performance values
+
+### History Stress Test
+
+Test the history buffer capacity and memory usage:
+
+```bash
+npm run bench-history -- --target=60000 --duration=60000
+```
+
+**Reports:**
+- History span (number of ticks retained)
+- Heap usage (when available)
+- Buffer size and memory consumption
+
+<Info>
+The history stress test runs at fixed speed factors to help identify when the history buffer becomes too large for your target environment.
+</Info>
+
+## Performance Metrics
+
+### E2E Bench Metrics
+
+When running with `?e2e=1`, you can access live performance data:
+
+```javascript
+const metrics = window.__E2E__.getBenchMetrics();
+```
+
+**Returns:**
+- Current tick rate
+- Active lemming count
+- Total spawned
+- Speed factor
+- Frame timing data
+
+### Performance API Instrumentation
+
+Enable detailed performance tracking:
+
+```
+https://localhost:8080/?performanceAPI=1
+```
+
+or use the short form:
+
+```
+https://localhost:8080/?pa=1
+```
+
+This enables Performance API instrumentation for detailed profiling.
+
+## GameTimer Catchup Slowdown
+
+The `GameTimer` includes an automatic catchup mechanism:
+
+- Monitors RAF loop timing
+- Reduces speed factor when the loop falls behind
+- Prevents simulation from outpacing rendering
+
+### Tuning Thresholds
+
+If the slowdown triggers too aggressively or never triggers, adjust thresholds in:
+
+```
+GameTimer.#catchupSpeedAdjust()
+```
+
+<Note>
+Use `bench2` mode to verify catchup behavior is working as intended.
+</Note>
+
+## Optimization Techniques
+
+### Lemming Count
+
+Performance scales with active lemming count:
+
+- **< 1,000 lemmings**: Minimal performance impact
+- **1,000 - 10,000**: Excellent performance on modern hardware
+- **10,000 - 100,000**: High speed factors achievable (10x-60x)
+- **100,000+**: Reduced speed factors, still playable
+- **1,000,000+**: Specialized benchmark territory
+
+### Speed vs. Lemming Count Trade-off
+
+```
+Effective Throughput = Speed Factor × Active Lemmings
+```
+
+For maximum throughput:
+- Find the optimal balance for your hardware
+- Use benchmark mode to identify limits
+- Monitor TPS (ticks per second) as a key metric
+
+### Rendering Optimization
+
+The engine separates simulation from rendering:
+
+- Game logic runs independently of frame rate
+- Canvas rendering is optimized with dirty regions
+- Minimap uses full-resolution accumulation
+- GUI updates are throttled appropriately
+
+## URL Parameters for Testing
+
+<CodeGroup>
+```url Endless Mode
+https://localhost:8080/?endless=1
+# Disable time limit and win/loss conditions
+```
+
+```url Extra Lemmings
+https://localhost:8080/?extra=1000
+# Add 1000 extra lemmings per spawn
+```
+
+```url High Speed
+https://localhost:8080/?speed=50
+# Start at 50x speed
+```
+
+```url Combined
+https://localhost:8080/?endless=1&extra=1000&speed=10&performanceAPI=1
+# Full stress test configuration
+```
+</CodeGroup>
+
+## Debug Mode Performance
+
+Right-click the Nuke button to toggle debug mode:
+
+### Debug Features
+
+- Blue pixel under lemmings (engine position)
+- Red rectangles for triggers (traps, blockers, exit)
+- Cyan rectangles for steel areas
+- Orange/green for arrow triggers
+
+### Debug Mode Overhead
+
+Debug rendering adds minimal overhead:
+- Speed can drop below 1x in 0.1 steps
+- Speed can rise to 120x (vs 100x in normal mode)
+- Performance impact is typically < 5%
+
+## Benchmark Results Interpretation
+
+### Key Metrics
+
+**TPS (Ticks Per Second)**
+- Target: 60 TPS at 1x speed (matching original game)
+- Higher speed factors multiply this proportionally
+- Example: 10x speed = 600 TPS target
+
+**Active Lemmings**
+- Count of lemmings currently in the simulation
+- Excludes removed/disabled lemmings
+- Primary driver of CPU usage
+
+**Spawned Count**
+- Total lemmings created since level start
+- Includes removed lemmings
+- Useful for capacity testing
+
+### Interpreting Results
+
+Good performance indicators:
+- Consistent TPS without drops
+- Smooth rendering at target speed
+- No catchup slowdown triggers
+
+Performance bottleneck indicators:
+- TPS drops below target
+- Catchup slowdown activates frequently
+- Frame time variance increases
+
+## Hardware Recommendations
+
+### Minimum
+
+- Modern browser with WebGL support
+- Dual-core CPU
+- 4GB RAM
+
+### Recommended
+
+- Quad-core CPU or better
+- 8GB+ RAM
+- Hardware-accelerated canvas rendering
+
+### High-Performance
+
+- 8+ core CPU
+- 16GB+ RAM
+- Dedicated GPU
+- Required for >100,000 simultaneous lemmings
+
+<Warning>
+Extreme lemming counts (>1,000,000) may require profiling and specialized tuning. Use benchmark modes to identify bottlenecks specific to your target environment.
+</Warning>

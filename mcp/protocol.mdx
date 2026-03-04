@@ -1,0 +1,445 @@
+---
+title: Protocol Details & Conventions
+description: Data types, protocol mappings, and v2 token-lean conventions
+---
+
+## Overview
+
+The MCP protocol for LemmingsJS-MIDI defines conventions for compact data transfer, skill/field mappings, and deterministic interaction patterns. This document covers protocol-level details referenced throughout the tool specifications.
+
+## Protocol Version
+
+Current protocol: **v2 (token-lean)**
+
+Key changes from v1:
+- Compact defaults (no pretty JSON)
+- `state.get` defaults to compact preset
+- Minimal events mode by default
+- Short tool names (dots mapped to underscores)
+
+## Session Protocol Response
+
+Every `session.create` returns protocol mappings:
+
+```javascript
+{
+  sessionId: 'xyz',
+  protocol: {
+    skillNames: [
+      'climber', 'floater', 'bomber', 'blocker',
+      'builder', 'basher', 'miner', 'digger'
+    ],
+    lemmingDeltaFields: [
+      'x', 'y', 'lookRight', 'frameIndex', 'state',
+      'canClimb', 'hasParachute', 'removed', 'disabled',
+      'countdown', 'hasExploded', 'lastTriggerType',
+      'actionType', 'countdownActive'
+    ]
+  },
+  gameUrl: 'https://localhost:8080/?e2e=1',
+  keybindings: { version: 1, actions: [...] }
+}
+```
+
+<Info>
+These arrays define canonical orderings and mappings used throughout the protocol.
+</Info>
+
+## Skill Mappings
+
+### Skill Names
+
+Frozen array defining skill order:
+
+```javascript
+const SKILL_NAMES = Object.freeze([
+  'climber',   // index 0
+  'floater',   // index 1
+  'bomber',    // index 2
+  'blocker',   // index 3
+  'builder',   // index 4
+  'basher',    // index 5
+  'miner',     // index 6
+  'digger'     // index 7
+]);
+```
+
+### Skill to Action Mapping
+
+Each skill maps to a keybinding action:
+
+```javascript
+const SKILL_ACTIONS = {
+  climber: 'selectSkillClimber',
+  floater: 'selectSkillFloater',
+  bomber: 'selectSkillBomber',
+  blocker: 'selectSkillBlocker',
+  builder: 'selectSkillBuilder',
+  basher: 'selectSkillBasher',
+  miner: 'selectSkillMiner',
+  digger: 'selectSkillDigger'
+};
+```
+
+### Skill Index Mapping
+
+Game-internal skill indices (1-based):
+
+```javascript
+const SKILL_INDEX_BY_NAME = Object.freeze({
+  climber: 1,
+  floater: 2,
+  bomber: 3,
+  blocker: 4,
+  builder: 5,
+  basher: 6,
+  miner: 7,
+  digger: 8
+});
+```
+
+<Note>
+Skill indices are **1-based** in the game state. Index 0 is unused.
+</Note>
+
+## Lemming Delta Fields
+
+When using `state.delta`, lemming changes are tracked by field index:
+
+<ResponseField name="0" type="number">x - X coordinate</ResponseField>
+<ResponseField name="1" type="number">y - Y coordinate</ResponseField>
+<ResponseField name="2" type="boolean">lookRight - Facing direction</ResponseField>
+<ResponseField name="3" type="number">frameIndex - Animation frame</ResponseField>
+<ResponseField name="4" type="number">state - State code</ResponseField>
+<ResponseField name="5" type="boolean">canClimb - Has climber ability</ResponseField>
+<ResponseField name="6" type="boolean">hasParachute - Has floater ability</ResponseField>
+<ResponseField name="7" type="boolean">removed - Has been removed from game</ResponseField>
+<ResponseField name="8" type="boolean">disabled - Is disabled</ResponseField>
+<ResponseField name="9" type="number">countdown - Bomber countdown value</ResponseField>
+<ResponseField name="10" type="boolean">hasExploded - Has exploded</ResponseField>
+<ResponseField name="11" type="number">lastTriggerType - Last trigger type</ResponseField>
+<ResponseField name="12" type="number">actionType - Current action type</ResponseField>
+<ResponseField name="13" type="boolean">countdownActive - Countdown is active</ResponseField>
+
+### Default Delta Fields
+
+When not specified, `state.delta` tracks fields 4-13 (excludes x/y/lookRight/frameIndex to reduce churn):
+
+```javascript
+const DEFAULT_LEM_DELTA_FIELDS = Object.freeze([4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+```
+
+## Data Type Conventions
+
+### Tick Index
+
+<ResponseField name="tickIndex" type="number | null">
+  Monotonically increasing game tick counter. `null` when unavailable or not applicable.
+</ResponseField>
+
+```javascript
+tickIndex: 150  // Valid tick
+tickIndex: null // Not yet started or paused before tick 0
+```
+
+### Timestamps
+
+All timestamps use ISO 8601 format:
+
+```javascript
+const nowIso = () => new Date().toISOString();
+// "2026-03-04T10:15:30.123Z"
+```
+
+### Resource URIs
+
+Custom URI scheme:
+
+```
+lemmings://sessions/{sessionId}/resources/{resourceId}
+```
+
+Parsed with:
+
+```javascript
+const RESOURCE_URI_RE = /^lemmings:\/\/sessions\/([^/]+)\/resources\/([^/]+)$/;
+```
+
+### MIME Types
+
+Common MIME types:
+
+<ResponseField name="image/png" type="string">PNG screenshots (default)</ResponseField>
+<ResponseField name="image/jpeg" type="string">JPEG screenshots (compressed)</ResponseField>
+<ResponseField name="image/webp" type="string">WebP screenshots (modern)</ResponseField>
+<ResponseField name="application/json" type="string">JSON resources (state, manifests)</ResponseField>
+
+```javascript
+const formatToMime = (format) => {
+  switch (format) {
+  case 'jpeg': return 'image/jpeg';
+  case 'webp': return 'image/webp';
+  default: return 'image/png';
+  }
+};
+```
+
+### Rectangles
+
+Rectangles use consistent `{ x, y, width, height }` shape:
+
+```javascript
+{
+  x: 100,
+  y: 50,
+  width: 320,  // Can also use 'w' alias
+  height: 240  // Can also use 'h' alias
+}
+```
+
+<Note>
+Both `width`/`height` and `w`/`h` are accepted. Width/height take precedence if both are present.
+</Note>
+
+## Tool Naming Conventions
+
+### Primary Names (Canonical)
+
+Tools are organized by namespace:
+
+- `session.*` - Session lifecycle
+- `time.*` - Time control
+- `state.*` - State inspection
+- `lemming.*` - Lemming-specific operations
+- `skill.*` - Skill application
+- `input.*` - Low-level input
+- `vision.*` - Screenshot/capture
+- `watch.*` - Watch management
+- `events.*` - Event polling
+- `editor.*` - Level editing
+
+### External Names (MCP Hosts)
+
+Dots are replaced with underscores for compatibility:
+
+```javascript
+const toToolName = (name) => String(name).replace(/\./g, '_');
+
+// 'state.get' → 'state_get'
+// 'lemming.select' → 'lemming_select'
+```
+
+### Legacy Aliases
+
+v1 tools with `lemmings.` prefix are supported via aliases:
+
+```javascript
+const LEGACY_TOOL_ALIASES = new Map([
+  ['lemmings.session.create', 'session.create'],
+  ['lemmings.state.get', 'state.get'],
+  ['lemmings.lemming.select', 'lemming.select'],
+  // ... etc
+]);
+```
+
+<Info>
+All three forms work: `state.get`, `state_get`, `lemmings.state.get`
+</Info>
+
+## Compact vs Debug Presets
+
+### Compact Preset (Default)
+
+Minimal, token-efficient state:
+
+```javascript
+{
+  version: 1,
+  mode: 'game',
+  ready: true,
+  game: {
+    state: 'running',
+    timer: { tickIndex, running, speedFactor },
+    victory: { leftCount, outCount, survivorCount, ... },
+    level: { name, width, height, releaseCount, needCount, ... },
+    skills: { selectedSkill, selectedSkillName, cheatMode, counts, availableMask },
+    lemmingManager: { selectedIndex, activeCount, totalCount, ... },
+    lemmingsSummary: { ... }  // If requested
+  }
+}
+```
+
+### Debug Preset
+
+Full, verbose state with all fields:
+
+```javascript
+{
+  version: 1,
+  mode: 'game',
+  ready: true,
+  view: { ... },      // Full view state
+  stage: { ... },     // Full stage state
+  game: { ... },      // Full game state
+  editor: { ... },    // Full editor state (if in editor mode)
+  midi: { ... }       // Full MIDI state
+}
+```
+
+## Key Normalization
+
+Keybindings use platform-agnostic key names. The server normalizes them for Playwright:
+
+```javascript
+const KEY_ALIASES = new Map([
+  ['Ctrl', 'Control'],
+  ['ControlLeft', 'Control'],
+  ['ControlRight', 'Control'],
+  ['Cmd', 'Meta'],
+  ['Command', 'Meta'],
+  ['MetaLeft', 'Meta'],
+  ['MetaRight', 'Meta'],
+  ['AltLeft', 'Alt'],
+  ['AltRight', 'Alt'],
+  ['Option', 'Alt'],
+  ['ShiftLeft', 'Shift'],
+  ['ShiftRight', 'Shift']
+]);
+
+const normalizeKeyToken = (token) => {
+  const raw = String(token || '');
+  return KEY_ALIASES.get(raw) || raw;
+};
+
+const normalizeKeyChord = (chord) => String(chord || '')
+  .split('+')
+  .map((part) => normalizeKeyToken(part.trim()))
+  .filter(Boolean)
+  .join('+');
+```
+
+**Examples:**
+
+<CodeGroup>
+
+```javascript Input
+'Ctrl+KeyC'
+```
+
+```javascript Normalized
+'Control+KeyC'
+```
+
+</CodeGroup>
+
+<CodeGroup>
+
+```javascript Input
+'Cmd+KeyV'
+```
+
+```javascript Normalized
+'Meta+KeyV'
+```
+
+</CodeGroup>
+
+## Viewport Defaults
+
+```javascript
+const DEFAULT_VIEWPORT = {
+  width: 1280,
+  height: 720,
+  deviceScaleFactor: 1
+};
+```
+
+## Environment Defaults
+
+```javascript
+const DEFAULT_BASE_URL = process.env.LEMMINGS_MCP_BASE_URL || 'https://localhost:8080';
+const DEFAULT_PATH = process.env.LEMMINGS_MCP_PATH || '/?e2e=1';
+```
+
+<Note>
+Override via environment variables or `session.create` parameters.
+</Note>
+
+## Structured vs Inline Content
+
+All tool responses return **structured content** in addition to text:
+
+```javascript
+const buildToolResponse = (payload) => ({
+  content: [{ type: 'text', text: JSON.stringify(payload) }],
+  structuredContent: payload
+});
+```
+
+MCP hosts can access:
+- `content[0].text` - JSON string (fallback)
+- `structuredContent` - Parsed object (preferred)
+
+## Error Conventions
+
+### Tool-level Errors (Preferred)
+
+Return structured `ok: false` responses:
+
+```javascript
+{
+  ok: false,
+  reason: 'session_not_found',
+  sessionId: 'xyz'
+}
+```
+
+Common reason codes:
+- `session_not_found`
+- `harness_unavailable`
+- `not_found`
+- `removed`
+- `disabled`
+- `unknown_action`
+- `canvas_missing`
+- `invalid_clip`
+
+### Protocol-level Errors (Exceptional)
+
+Throw exceptions only for critical failures:
+- Session not found (lookup failed)
+- Browser crashed
+- Malformed arguments (schema validation)
+
+## Tick Index as Source of Truth
+
+All time-based operations reference `tickIndex` from the E2E harness:
+
+```javascript
+const getTickIndex = async (session) => {
+  const state = await getState(session);
+  return state?.game?.timer?.tickIndex ?? null;
+};
+```
+
+<Info>
+`tickIndex` is **deterministic** and monotonic (except when seeking backward). Use it for precise synchronization.
+</Info>
+
+## Best Practices
+
+<Note>
+**Use compact preset by default**: Saves tokens and reduces transfer size. Switch to debug only when full introspection is needed.
+</Note>
+
+<Note>
+**Normalize keys before sending**: Always run keybindings through `normalizeKeyChord()` to ensure Playwright compatibility.
+</Note>
+
+<Note>
+**Parse URIs with the regex**: Don't hand-parse resource URIs. Use `RESOURCE_URI_RE.exec()` for safety.
+</Note>
+
+<Note>
+**Trust tickIndex, not wall time**: Game simulation time is authoritative. Use `tickIndex` for ordering and correlation.
+</Note>

@@ -1,0 +1,176 @@
+---
+title: Architecture
+description: Codebase structure and key modules of LemmingsJS-MIDI
+---
+
+LemmingsJS-MIDI is a high-performance JavaScript port of Lemmings with WebMIDI sequencing support. The codebase is organized for both browser runtime and Node.js tooling.
+
+## Project Structure
+
+The repository follows a clear separation between browser code, Node.js tools, and configuration:
+
+```
+LemmingsJS-MIDI/
+├── js/              # Browser-side game engine
+│   ├── editor/      # Level editor modules
+│   ├── vendor/      # External libraries (do not modify)
+│   └── xbrz/        # Image scaling
+├── tools/           # Offline asset extraction scripts
+├── scripts/         # Development and testing utilities
+├── test/            # Mocha test suite
+├── mcp/             # Model Context Protocol server
+└── e2e/             # Playwright end-to-end tests
+```
+
+## Key Modules
+
+### Game Engine (`js/`)
+
+The core game logic runs entirely in the browser. All modules in the `js/` directory must avoid Node.js-only dependencies.
+
+**Core modules:**
+- **BitReader.js** - Binary data parsing for level and sprite files
+- Game state management and physics
+- Lemming AI and skill execution
+- Level rendering and viewport control
+- Input handling and keybindings
+
+**Performance characteristics:**
+- Supports over 25 million simultaneous lemmings
+- Runs at >60x original game speed with 450,000 lems
+- Tick-by-tick stepping and reverse playback at full speed
+
+### Level Editor (`js/editor/`)
+
+Standalone editor accessible at `editor.html`:
+
+- Import/export `.nxlv` and classic `.lvl` files
+- Full undo/redo support
+- Steel area editing
+- Level validation
+- Palette preview caching
+- Multi-select and clone operations
+
+<Info>
+The editor modules maintain 100% test coverage. Run `npm run coverage-editor` to verify.
+</Info>
+
+### WebMIDI Integration
+
+The MIDI system provides:
+
+- Input/output routing with channel filtering
+- Real-time sequencing based on game events
+- Note mapping for skill selection and controls
+- CC mapping for speed, BPM, intensity, and more
+- ADSR envelope control
+- Positional modifiers (X/Y to velocity/timbre)
+- Configurable via `midi-mapping.json`
+
+Configuration persists to localStorage with defaults from `midi-mapping.json`.
+
+### Offline Tools (`tools/`)
+
+Node.js utilities for asset extraction and manipulation:
+
+- **NodeFileProvider** - Read from folders or archives (`.zip`, `.tar`, `.tar.gz`, `.tgz`, `.rar`)
+- Sprite export (panel, lemmings, ground objects)
+- Sprite patching and replacement
+- Level packing into DAT files
+
+See [Offline Tools](/development/offline-tools) for detailed usage.
+
+### MCP Server (`mcp/`)
+
+Model Context Protocol server for AI agent integration:
+
+- Game state inspection via JSON
+- Input control automation
+- Vision capture using Playwright
+- Interactive spectator mode
+- E2E testing harness
+
+## Browser Constraints
+
+<Note>
+The `js/` directory runs in the browser. Avoid Node-only modules like `fs`, `path`, or `process` in this directory.
+</Note>
+
+### Vendor Libraries
+
+External dependencies live in `js/vendor/`:
+
+- jQuery
+- WebMIDI.js
+- Other third-party libraries
+
+**Do not modify or reformat vendor files.** They are excluded from linting and formatting.
+
+## Code Style
+
+- **Indentation:** 2 spaces (see `js/BitReader.js`)
+- **Strings:** Single quotes
+- **Semicolons:** Required
+- **Comments:** Rare and focused, only when logic is non-obvious
+
+Run `npm run format` to automatically fix style issues.
+
+## Level Packs
+
+Level packs follow the NeoLemmix folder layout documented in `docs/levelpacks.md`. The game supports:
+
+- Lemmings (default)
+- Oh no! More Lemmings
+- Xmas 1991, 1992
+- Holiday 1993, 1994
+
+Packs can be loaded from folders or compressed archives without extraction.
+
+## Progressive Web App
+
+The project includes:
+
+- `site.webmanifest` - PWA configuration
+- `service-worker.js` - Offline caching
+- Fullscreen landscape mode
+- App installation support
+
+Core assets are cached after the first successful load.
+
+## Environment Requirements
+
+- **Node.js:** 20+ (see `package.json` engines field)
+- **Browser:** Modern browsers with WebMIDI support (Chrome/Edge recommended)
+- **Development:** Local HTTPS server for WebMIDI and PWA features
+
+<Steps>
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+  </Step>
+  <Step title="Start development server">
+    ```bash
+    npm start
+    ```
+    
+    For HTTPS (required for WebMIDI):
+    ```bash
+    npm run start-https
+    ```
+  </Step>
+  <Step title="Access the game">
+    Open `https://localhost:8080` in your browser.
+    
+    For the editor: `https://localhost:8080/editor.html`
+  </Step>
+</Steps>
+
+## Configuration Files
+
+- **config.json** - Level pack paths and game configuration
+- **keybindings.json** - Configurable keyboard controls
+- **midi-mapping.json** - MIDI input/output mapping and defaults
+- **steelSprites.json** - Steel terrain accuracy improvements
+
+See `docs/config.md` for detailed configuration options.

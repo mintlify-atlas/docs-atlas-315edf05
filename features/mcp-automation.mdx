@@ -1,0 +1,586 @@
+---
+title: 'MCP Automation'
+description: 'Model Context Protocol server for AI automation, state inspection, and vision capture'
+---
+
+## Overview
+
+LemmingsJS-MIDI includes a comprehensive MCP (Model Context Protocol) server that enables AI agents to play, analyze, and edit Lemmings levels through programmatic control.
+
+<CardGroup cols={2}>
+  <Card title="State Inspection" icon="magnifying-glass">
+    JSON-based game state queries and deltas
+  </Card>
+  <Card title="Input Control" icon="gamepad">
+    Execute actions via keybindings or raw key events
+  </Card>
+  <Card title="Vision Capture" icon="camera">
+    Screenshot capture via Playwright sessions
+  </Card>
+  <Card title="Interactive Spectator" icon="eye">
+    Watch and control gameplay in real-time
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+### Prerequisites
+
+```bash
+# Install dependencies
+npm install
+
+# Start HTTPS game server
+npm run start-https
+```
+
+The game will be available at `https://localhost:8080`.
+
+### MCP Server Setup
+
+**Codex CLI Configuration (v0.77+):**
+
+```toml
+[mcp_servers.lemmings]
+  command = "node"
+  args = ["path/to/LemmingsJS-MIDI/mcp/server.js"]
+
+[mcp_servers.lemmings.env]
+  LEMMINGS_MCP_BASE_URL = "https://localhost:8080"
+  LEMMINGS_MCP_PATH = "/?e2e=1"
+```
+
+**Environment Variables:**
+- `LEMMINGS_MCP_BASE_URL`: Game server URL (default: `https://localhost:8080`)
+- `LEMMINGS_MCP_PATH`: Game path with E2E harness (default: `/?e2e=1`)
+
+### Running the Server
+
+```bash
+# Direct execution (stdio transport)
+node mcp/server.js
+
+# Or use npm script
+npm run mcp
+```
+
+## MCP Tools
+
+### Session Management
+
+<Tabs>
+  <Tab title="session.create">
+    **Launch a Playwright session**
+    
+    Creates a browser session, loads the game with E2E harness, and returns session ID.
+    
+    **Parameters:**
+    - `baseUrl`: Game server URL (optional)
+    - `path`: Game path (optional)
+    - `headless`: Browser headless mode (default: true)
+    - `viewport`: Width, height, deviceScaleFactor
+    - `enableSpectator`: Enable spectator server (optional)
+    - `spectator`: Spectator configuration
+    - `resources`: Resource store limits
+    - `events`: Event queue configuration
+    
+    **Returns:**
+    - `sessionId`: Unique session identifier
+    - `protocol`: Skill names and delta field mappings
+    - `gameUrl`: Full game URL
+    - `spectatorUrl`: Spectator URL (if enabled)
+    - `keybindings`: Available actions and version
+  </Tab>
+  <Tab title="session.close">
+    **Close a session**
+    
+    Closes browser, clears resources, and removes session.
+    
+    **Parameters:**
+    - `sessionId`: Session to close
+    
+    **Returns:**
+    - `ok`: Success boolean
+  </Tab>
+</Tabs>
+
+### Time Control
+
+<Tabs>
+  <Tab title="time.pause">
+    **Pause the game timer**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - `tickIndex`: Current tick index
+  </Tab>
+  <Tab title="time.resume">
+    **Resume the game timer**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - `tickIndex`: Current tick index
+  </Tab>
+  <Tab title="time.step">
+    **Step forward or backward by ticks**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `count`: Number of ticks (positive = forward, negative = backward)
+    - `ensurePaused`: Pause before stepping (default: true)
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - `tickIndexBefore`: Tick before stepping
+    - `tickIndexAfter`: Tick after stepping
+  </Tab>
+</Tabs>
+
+### State Inspection
+
+<Tabs>
+  <Tab title="state.get">
+    **Fetch structured state snapshot**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `preset`: 'compact' or 'debug' (default: compact)
+    - `include`: Flags for view, stage, game, editor, midi
+    - `lemmings`: Lemming query configuration
+      - `mode`: 'none', 'summary', 'selected', 'all', 'ids'
+      - `ids`: Array of lemming IDs (for 'ids' mode)
+      - `max`: Maximum lemmings to return
+      - `topK`: Top K lemmings by priority
+      - `includeSelected`: Include selected lemming
+      - `activeOnly`: Filter out removed/disabled
+      - `inViewOnly`: Filter to viewport
+      - `rectWorld`: Filter to world rectangle
+    - `format`: Delivery and formatting options
+    
+    **Returns:**
+    - Full or compact state snapshot
+    - Game timer, victory, level, skills, lemmings
+    - Lemming summary with counts and top K
+  </Tab>
+  <Tab title="state.delta">
+    **Return history deltas between ticks**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `afterTick`: Starting tick (default: last state.get)
+    - `toTick`: Ending tick (default: current)
+    - `maxTicks`: Limit delta range
+    - `include`: Flags for lemmings, skills, victory, etc.
+    - `lemmings`: Delta field configuration
+      - `fields`: Array of field indices (0-13)
+      - `includePrev`: Include previous values
+      - `includeXY`: 'none', 'tracked', 'all'
+      - `trackedIds`: IDs to track for XY
+      - `maxChanges`: Limit change count
+    - `format`: Delivery options
+    
+    **Returns:**
+    - Delta arrays per tick range
+    - Changed lemming fields only
+  </Tab>
+</Tabs>
+
+### Lemming Operations
+
+<Tabs>
+  <Tab title="lemming.summary">
+    **Get aggregated lemming statistics**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `filter`: activeOnly, inViewOnly, rectWorld
+    - `topK`: Number of top lemmings to return
+    - `includeSelected`: Include selected lemming
+    
+    **Returns:**
+    - `selectedLemmingId`: Currently selected
+    - `totalCount`, `activeCount`, `removedCount`, `disabledCount`
+    - `byActionType`: Histogram of action types
+    - `byState`: Histogram of state codes
+    - `climbers`, `floaters`, `countingDown`, `exploded`
+    - `selected`: Selected lemming data
+    - `top`: Top K lemmings array
+  </Tab>
+  <Tab title="lemming.select">
+    **Select a lemming by ID**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `lemmingId`: Lemming to select
+    - `alsoCenterView`: Center camera on lemming
+    - `confirm`: Verify selection succeeded
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - `lemmingId`: Selected ID
+    - Confirmation data if requested
+  </Tab>
+</Tabs>
+
+### Skill Application
+
+<Tabs>
+  <Tab title="skill.apply">
+    **Apply a skill to a lemming**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `skill`: 'climber', 'floater', 'bomber', 'blocker', 'builder', 'basher', 'miner', 'digger'
+    - `lemmingId`: Target lemming (optional, uses selected)
+    - `ensurePaused`: Pause before applying
+    - `requireAvailable`: Verify skill is available
+    - `postStep`: Step forward N ticks after applying
+    - `verify`: Confirm skill was applied
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - Verification data if requested
+  </Tab>
+</Tabs>
+
+### Input Control
+
+<Tabs>
+  <Tab title="input.action">
+    **Execute named action from keybindings**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `action`: Action name from keybindings.json
+    - `repeat`: Number of times to repeat
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - `action`: Action name executed
+    - `repeat`: Repeat count
+    
+    **Common Actions:**
+    - `togglePause`, `restart`, `speedUp`, `speedDown`
+    - `selectSkillClimber`, `selectSkillFloater`, etc.
+    - `increaseReleaseRate`, `decreaseReleaseRate`
+    - `nuke`, `zoomIn`, `zoomOut`
+  </Tab>
+  <Tab title="input.keys">
+    **Inject low-level key events**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `keys`: Array of key chords (e.g., ['Space', 'Shift+Tab'])
+    - `repeat`: Number of times to repeat sequence
+    - `events`: Array of {type, key} for granular control
+      - type: 'down', 'up', 'press'
+      - key: Key name
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - Event count executed
+  </Tab>
+</Tabs>
+
+### Vision Capture
+
+<Tabs>
+  <Tab title="vision.capture">
+    **Capture screenshot of page or canvas**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `target`: 'page', 'gameCanvas', 'guiCanvas', 'stageCanvas', 'rect'
+    - `rect`: {x, y, width, height} for 'rect' target
+    - `format`: 'png', 'jpeg', 'webp' (default: png)
+    - `delivery`: 'resource' or 'inline' (default: resource)
+    - `tag`: Optional tag for resource
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - `frame`: Frame metadata
+      - `id`, `mimeType`, `width`, `height`
+      - `tickIndex`, `takenAt`, `target`, `tag`
+      - `resourceUri` (if delivery=resource)
+      - `dataBase64` (if delivery=inline)
+      - `sizeBytes`, `expiresAt`
+  </Tab>
+  <Tab title="vision.captureSequence">
+    **Capture multiple frames across time**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `mode`: 'step' (step ticks) or 'sample' (real-time)
+    - `frames`: Number of frames to capture
+    - `stepBy`: Ticks per step (for 'step' mode)
+    - `everyMs`: Milliseconds between captures (for 'sample' mode)
+    - `capture`: Same options as vision.capture
+    - `returnManifest`: Return JSON manifest resource
+    
+    **Returns:**
+    - `sequenceId`: Unique sequence identifier
+    - `frames`: Array of frame metadata
+    - `manifestResourceUri`: JSON manifest resource (if enabled)
+  </Tab>
+</Tabs>
+
+### Editor Operations
+
+<Tabs>
+  <Tab title="editor.apply">
+    **Apply editor mutations**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `ops`: Array of editor operations
+      - `opId`: Optional operation ID
+      - `type`: Operation type
+      - `args`: Operation arguments
+    - `atomic`: All ops succeed or none
+    - `dryRun`: Validate without applying
+    - `history`: Record for undo/redo
+    - `preview`: Refresh preview after apply
+    - `validate`: Run validation and optional auto-fix
+    - `returnState`: 'none', 'editor', 'full'
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - Operation results
+    - Validation issues (if requested)
+    - Editor state (if requested)
+  </Tab>
+</Tabs>
+
+### Watches
+
+<Tabs>
+  <Tab title="watch.create">
+    **Create a watch for automatic event emission**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `watch`: Watch configuration
+      - `type`: 'everyTicks' or 'onChange'
+      - `everyTicks`: Tick interval (for everyTicks)
+      - `jsonPointer`: State path to watch (for onChange)
+    - `actions`: Array of actions to execute
+      - `type`: 'emitSummary' or 'capture'
+      - `include`: What to include in summary
+      - `capture`: Capture options
+      - `throttleTicks`: Minimum ticks between captures
+    - `enabled`: Start enabled (default: true)
+    
+    **Returns:**
+    - `ok`: Success boolean
+    - `watchId`: Unique watch identifier
+  </Tab>
+  <Tab title="watch.cancel">
+    **Cancel an active watch**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `watchId`: Watch to cancel
+    
+    **Returns:**
+    - `ok`: Success boolean
+  </Tab>
+</Tabs>
+
+### Events
+
+<Tabs>
+  <Tab title="events.poll">
+    **Poll events since cursor**
+    
+    **Parameters:**
+    - `sessionId`: Target session
+    - `after`: Cursor from previous poll (optional)
+    
+    **Returns:**
+    - `cursor`: New cursor position
+    - `events`: Array of events since cursor
+      - `source`: 'agent', 'human', 'system'
+      - `type`: Event type
+      - `tickIndex`: Tick when event occurred
+      - `summary`: Human-readable summary
+      - `data`: Event-specific data
+      - `resourceUris`: Related resources
+    - `humanSummary`: Aggregated human actions
+  </Tab>
+</Tabs>
+
+## Resources
+
+The MCP server exposes a resource store for binary data:
+
+**Resource URIs:** `lemmings://sessions/{sessionId}/resources/{resourceId}`
+
+**MCP Resource Operations:**
+- `resources/list`: List available resources
+- `resources/read`: Read resource by URI
+
+**Resource Types:**
+- Screenshots (PNG, JPEG, WebP)
+- State snapshots (JSON)
+- Capture manifests (JSON)
+
+**Storage Limits:**
+- Default max: 256 MB total
+- Default TTL: 10 minutes
+- Default max items: 5000
+
+<Info>
+Resources are automatically cleaned up when sessions close or when they expire.
+</Info>
+
+## Spectator Mode
+
+Interactive spectator mode provides real-time viewing and optional control:
+
+**Features:**
+- WebSocket-based frame streaming
+- Real-time JPEG frame delivery (500ms interval)
+- Optional human input (keyboard and mouse)
+- Independent browser viewer
+
+**Enable in session.create:**
+```json
+{
+  "enableSpectator": true,
+  "spectator": {
+    "port": 3000,
+    "allowHumanInput": true,
+    "openBrowser": false
+  }
+}
+```
+
+**Spectator Controls:**
+- View live gameplay in browser
+- Send keyboard input (if allowHumanInput=true)
+- Click to interact (normalized coordinates)
+
+<Warning>
+Spectator mode with human input enabled allows external control of the game session. Use with caution in multi-user environments.
+</Warning>
+
+## Event System
+
+### Event Modes
+
+<Tabs>
+  <Tab title="none">
+    No events attached to tool responses.
+  </Tab>
+  <Tab title="minimal">
+    Non-agent events only, with trimmed fields. Default mode.
+    
+    **Includes:**
+    - Human input events
+    - System errors
+    - Watch triggers
+    - Excludes agent actions
+  </Tab>
+  <Tab title="full">
+    All events with complete data, including agent actions.
+  </Tab>
+</Tabs>
+
+### Event Sources
+
+- **agent:** MCP tool calls and automated actions
+- **human:** Spectator input or manual control
+- **system:** Errors, watch triggers, state changes
+
+## Protocol Details
+
+### Lemming Delta Fields
+
+Field indices for `state.delta` lemming field filtering:
+
+| Index | Field | Description |
+|-------|-------|-------------|
+| 0 | x | X position |
+| 1 | y | Y position |
+| 2 | lookRight | Facing direction |
+| 3 | frameIndex | Animation frame |
+| 4 | state | State code |
+| 5 | canClimb | Climber ability |
+| 6 | hasParachute | Floater ability |
+| 7 | removed | Removed flag |
+| 8 | disabled | Disabled flag |
+| 9 | countdown | Bomber countdown |
+| 10 | hasExploded | Exploded flag |
+| 11 | lastTriggerType | Last trigger |
+| 12 | actionType | Current action |
+| 13 | countdownActive | Countdown active |
+
+**Default delta fields:** `[4, 5, 6, 7, 8, 9, 10, 11, 12, 13]` (state changes only)
+
+### Skill Names
+
+Standardized skill identifiers:
+
+`['climber', 'floater', 'bomber', 'blocker', 'builder', 'basher', 'miner', 'digger']`
+
+### Tool Naming
+
+Tools are exposed with underscores replacing dots:
+
+- Internal: `session.create`
+- External: `session_create`
+- Legacy: `lemmings.session.create` (compatibility alias)
+
+## Client Compatibility
+
+Verified MCP hosts:
+
+- **Codex CLI:** Full support (v0.77+)
+- **Claude Code:** Full support
+- **Claude Desktop:** Full support
+- **VS Code MCP:** Full support
+- **LM Studio:** Stdio transport only (HTTP not yet wired)
+
+**Compatibility tracking:** `docs/mcp/client-compatibility.json`
+
+## Documentation
+
+**MCP Server Docs:**
+- Interface spec: `docs/mcp/lemmings-mcp-interface-spec-memresources.md`
+- Implementation notes: `docs/mcp/lemmings-mcp-implementation-notes-memresources.md`
+- Protocol v2: `docs/mcp/protocol-v2.md`
+- Call examples: `docs/mcp/call-examples.md`
+- Zod schema: `docs/mcp/lemmings-mcp-zod-schema.ts`
+
+**Testing:**
+```bash
+# Check MCP client compatibility
+npm run check-mcp-clients
+```
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="AI Gameplay" icon="robot">
+    LLMs can play levels, analyze strategies, and optimize solutions
+  </Card>
+  <Card title="Automated Testing" icon="flask">
+    Verify level completion, test edge cases, benchmark performance
+  </Card>
+  <Card title="Level Analysis" icon="chart-line">
+    Extract metrics, analyze difficulty, identify bottlenecks
+  </Card>
+  <Card title="Training Data" icon="database">
+    Generate gameplay recordings for ML training
+  </Card>
+</CardGroup>
+
+<Info>
+The MCP server supports both "fair play" mode (JSON state only) and "vision mode" (Playwright screenshots) for different AI agent architectures.
+</Info>

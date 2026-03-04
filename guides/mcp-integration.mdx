@@ -1,0 +1,621 @@
+---
+title: MCP Integration
+description: Integrate LemmingsJS-MIDI with AI tools via Model Context Protocol
+---
+
+## Overview
+
+LemmingsJS-MIDI includes a Model Context Protocol (MCP) server that enables AI assistants to play, inspect, and edit Lemmings levels. The server provides state management, input control, vision capture, and level editing capabilities.
+
+<Note>
+  MCP enables both semantic game state access and vision-based interaction via Playwright.
+</Note>
+
+## Quick Start
+
+<Steps>
+  <Step title="Start the Game Server">
+    Run the game server with HTTPS enabled:
+    
+    ```bash
+    npm run start-https
+    ```
+    
+    The game will be available at `https://localhost:8080`.
+  </Step>
+  
+  <Step title="Configure Your MCP Client">
+    Add the LemmingsJS-MIDI MCP server to your client configuration.
+    
+    <Tabs>
+      <Tab title="Codex CLI">
+        Add to `config.toml` (version 0.77+):
+        
+        ```toml
+        [mcp_servers.lemmings]
+          command = "node"
+          args = ["C:\\path\\to\\LemmingsJS-MIDI\\mcp\\server.js"]
+        
+        [mcp_servers.lemmings.env]
+          LEMMINGS_MCP_BASE_URL = "https://localhost:8080"
+          LEMMINGS_MCP_PATH = "/?e2e=1"
+        ```
+      </Tab>
+      
+      <Tab title="Claude Desktop">
+        Add to `claude_desktop_config.json`:
+        
+        ```json
+        {
+          "mcpServers": {
+            "lemmings": {
+              "command": "node",
+              "args": ["/path/to/LemmingsJS-MIDI/mcp/server.js"],
+              "env": {
+                "LEMMINGS_MCP_BASE_URL": "https://localhost:8080",
+                "LEMMINGS_MCP_PATH": "/?e2e=1"
+              }
+            }
+          }
+        }
+        ```
+      </Tab>
+      
+      <Tab title="VS Code">
+        Add to MCP extension settings:
+        
+        ```json
+        {
+          "mcp.servers": {
+            "lemmings": {
+              "command": "node",
+              "args": ["/path/to/LemmingsJS-MIDI/mcp/server.js"],
+              "env": {
+                "LEMMINGS_MCP_BASE_URL": "https://localhost:8080",
+                "LEMMINGS_MCP_PATH": "/?e2e=1"
+              }
+            }
+          }
+        }
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Connect and Play">
+    Your AI assistant can now control the game, inspect state, and edit levels via MCP tools.
+  </Step>
+</Steps>
+
+## Environment Variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `LEMMINGS_MCP_BASE_URL` | `https://localhost:8080` | Game server base URL |
+| `LEMMINGS_MCP_PATH` | `/?e2e=1` | Default path with e2e mode |
+
+<Note>
+  The `e2e=1` parameter enables programmatic control interfaces required for MCP.
+</Note>
+
+## MCP Tools
+
+The server exposes tools with dots replaced by underscores for host compatibility. For example, `state.get` becomes `lemmings.state_get`.
+
+### Session Management
+
+<Accordion title="session.create">
+  Create a new game session:
+  
+  ```json
+  {
+    "headless": true,
+    "events": { "mode": "minimal" }
+  }
+  ```
+  
+  Returns:
+  - `sessionId`: Unique session identifier
+  - `ready`: Boolean indicating session is ready
+  
+  Options:
+  - `headless`: Run without UI (default: true)
+  - `events.mode`: Event filtering (`minimal`, `full`, `none`)
+</Accordion>
+
+<Accordion title="session.close">
+  Close a session and clean up resources:
+  
+  ```json
+  {
+    "sessionId": "<id>"
+  }
+  ```
+  
+  Cleanup includes:
+  - Closing browser context (if vision is enabled)
+  - Removing session from registry
+  - Releasing memory
+</Accordion>
+
+### State Inspection
+
+<Accordion title="state.get">
+  Get game state snapshot:
+  
+  ```json
+  {
+    "sessionId": "<id>",
+    "preset": "compact",
+    "lemmings": {
+      "mode": "summary",
+      "topK": 8,
+      "includeSelected": true
+    }
+  }
+  ```
+  
+  Presets:
+  - `compact`: Essential game state (default)
+  - `debug`: Full state including internal data
+  - `minimal`: Only critical fields
+  
+  Lemming modes:
+  - `summary`: Counts and top K lemmings
+  - `all`: All lemmings (use `max` to limit)
+  - `none`: No lemming data
+</Accordion>
+
+<Accordion title="state.delta">
+  Get state changes since last `state.get`:
+  
+  ```json
+  {
+    "sessionId": "<id>",
+    "lemmings": { "includeXY": "none" }
+  }
+  ```
+  
+  Delta options:
+  - `includeXY`: Control position churn (`none`, `changed`, `all`)
+  - Automatically tracks changes between calls
+  - Returns empty array when no changes
+</Accordion>
+
+<Accordion title="lemming.summary">
+  Get lemming statistics and selected lemming data:
+  
+  ```json
+  {
+    "sessionId": "<id>",
+    "topK": 5
+  }
+  ```
+  
+  Returns:
+  - Total, active, saved, lost counts
+  - Top K lemmings by priority
+  - Selected lemming (if any)
+</Accordion>
+
+### Input Control
+
+<Accordion title="input.action">
+  Execute game actions:
+  
+  ```json
+  {
+    "sessionId": "<id>",
+    "action": "togglePause"
+  }
+  ```
+  
+  Available actions:
+  - `togglePause`, `stepForward`, `stepBackward`
+  - `speedUp`, `speedDown`, `speedReset`
+  - `nuke`, `restart`
+  - `zoomIn`, `zoomOut`, `zoomReset`
+  - Plus all other keybinding actions
+</Accordion>
+
+<Accordion title="input.skill">
+  Apply a skill to a lemming:
+  
+  ```json
+  {
+    "sessionId": "<id>",
+    "skill": "builder",
+    "lemmingId": 12,
+    "requireAvailable": true,
+    "verify": true
+  }
+  ```
+  
+  Skills:
+  - `climber`, `floater`, `bomber`, `blocker`
+  - `builder`, `basher`, `miner`, `digger`
+  
+  Options:
+  - `requireAvailable`: Check skill count before applying
+  - `verify`: Confirm skill was applied successfully
+</Accordion>
+
+<Accordion title="input.click">
+  Simulate mouse click at coordinates:
+  
+  ```json
+  {
+    "sessionId": "<id>",
+    "x": 320,
+    "y": 180,
+    "button": "left"
+  }
+  ```
+  
+  Buttons: `left`, `right`, `middle`
+</Accordion>
+
+### Vision Capture
+
+<Accordion title="vision.capture">
+  Capture game viewport via Playwright:
+  
+  ```json
+  {
+    "sessionId": "<id>",
+    "format": "png",
+    "fullPage": false
+  }
+  ```
+  
+  Returns:
+  - Resource URI for image data
+  - Use `resources/read` to fetch the image
+  
+  Options:
+  - `format`: `png` or `jpeg`
+  - `fullPage`: Capture entire page or just viewport
+  - `quality`: JPEG quality (1-100)
+</Accordion>
+
+### Level Editing
+
+<Accordion title="editor.ops">
+  Execute editor operations:
+  
+  ```json
+  {
+    "sessionId": "<id>",
+    "ops": [
+      {
+        "type": "level.new",
+        "args": {
+          "header": {
+            "TITLE": "Demo",
+            "STYLE": "dirt"
+          }
+        }
+      },
+      {
+        "type": "entry.add",
+        "args": {
+          "kind": "terrain",
+          "props": {
+            "PIECE": 1,
+            "X": 120,
+            "Y": 80
+          }
+        }
+      },
+      {
+        "type": "level.export",
+        "args": {
+          "format": "nxlv",
+          "filename": "demo.nxlv"
+        }
+      }
+    ],
+    "preview": { "refresh": true },
+    "returnState": "editor"
+  }
+  ```
+  
+  Operation types:
+  - `level.new`, `level.load`, `level.export`
+  - `entry.add`, `entry.update`, `entry.delete`
+  - `entry.move`, `entry.clone`
+  - `tool.select`, `palette.pick`
+</Accordion>
+
+## Common Usage Patterns
+
+### Playing a Level
+
+<Steps>
+  <Step title="Create Session">
+    ```json
+    session.create({ "headless": true, "events": { "mode": "minimal" } })
+    ```
+  </Step>
+  
+  <Step title="Get Initial State">
+    ```json
+    state.get({ "sessionId": "<id>", "preset": "compact" })
+    ```
+  </Step>
+  
+  <Step title="Execute Actions">
+    ```json
+    input.action({ "sessionId": "<id>", "action": "togglePause" })
+    input.skill({ "sessionId": "<id>", "skill": "builder", "lemmingId": 5 })
+    ```
+  </Step>
+  
+  <Step title="Monitor Progress">
+    ```json
+    state.delta({ "sessionId": "<id>" })
+    lemming.summary({ "sessionId": "<id>" })
+    ```
+  </Step>
+  
+  <Step title="Cleanup">
+    ```json
+    session.close({ "sessionId": "<id>" })
+    ```
+  </Step>
+</Steps>
+
+### Creating a Level
+
+<Steps>
+  <Step title="Create Session">
+    ```json
+    session.create({ "headless": false })
+    ```
+  </Step>
+  
+  <Step title="Initialize Level">
+    ```json
+    editor.ops({
+      "sessionId": "<id>",
+      "ops": [
+        { "type": "level.new", "args": { "header": { "TITLE": "My Level" } } }
+      ]
+    })
+    ```
+  </Step>
+  
+  <Step title="Add Entries">
+    ```json
+    editor.ops({
+      "sessionId": "<id>",
+      "ops": [
+        { "type": "entry.add", "args": { "kind": "terrain", "props": {...} } },
+        { "type": "entry.add", "args": { "kind": "entrance", "props": {...} } },
+        { "type": "entry.add", "args": { "kind": "exit", "props": {...} } }
+      ]
+    })
+    ```
+  </Step>
+  
+  <Step title="Export">
+    ```json
+    editor.ops({
+      "sessionId": "<id>",
+      "ops": [
+        { "type": "level.export", "args": { "format": "nxlv" } }
+      ]
+    })
+    ```
+  </Step>
+</Steps>
+
+### Vision-Based Interaction
+
+<Steps>
+  <Step title="Create Session with Vision">
+    Vision is enabled automatically when `vision.capture` is called.
+  </Step>
+  
+  <Step title="Capture Viewport">
+    ```json
+    vision.capture({ "sessionId": "<id>", "format": "png" })
+    ```
+  </Step>
+  
+  <Step title="Read Image Resource">
+    Use the returned resource URI with `resources/read` to fetch image data.
+  </Step>
+  
+  <Step title="Analyze and Act">
+    Process the image with vision models, then use `input.click` or `input.skill` to interact.
+  </Step>
+</Steps>
+
+## Protocol Versions
+
+The MCP server uses protocol v2 with these defaults:
+
+- `state.get` defaults to `compact` preset
+- Events default to `minimal` mode (non-agent, trimmed fields)
+- Tool names use underscores instead of dots
+- Short tool names are primary; legacy aliases remain for compatibility
+
+## Smoke Test Checklist
+
+Verify your integration with these basic tests:
+
+<Accordion title="Essential Tests">
+  - `session.create` returns a session id and `ready=true`
+  - `state.get` returns a snapshot with `game.timer.tickIndex`
+  - `state.delta` returns at least one delta (or empty array)
+  - `input.action` with `togglePause` toggles `game.timer.running`
+  - `lemming.summary` returns counts and selected lemming data
+  - `vision.capture` returns a resource URI
+  - `resources/read` can fetch the captured image
+  - `session.close` cleans up without errors
+</Accordion>
+
+## Client Compatibility
+
+The MCP server has been tested with:
+
+- Codex CLI (v0.77+)
+- Claude Desktop
+- VS Code MCP extension
+- LM Studio (stdio transport)
+
+For host-specific configuration examples, see `docs/mcp/config-examples/`.
+
+## Interactive Spectator Mode
+
+When running non-headless sessions, you can:
+
+- Watch the AI play in real-time
+- Intervene manually via mouse/keyboard
+- Mix AI control with human input
+- Observe decision-making processes
+
+<Note>
+  Spectator mode is great for debugging, training, and entertainment.
+</Note>
+
+## Advanced Features
+
+### Event Filtering
+
+<CodeGroup>
+```json Minimal (default)
+{
+  "events": {
+    "mode": "minimal"
+  }
+}
+```
+
+```json Full Events
+{
+  "events": {
+    "mode": "full"
+  }
+}
+```
+
+```json No Events
+{
+  "events": {
+    "mode": "none"
+  }
+}
+```
+</CodeGroup>
+
+### State Delivery Formats
+
+<CodeGroup>
+```json Inline (default)
+{
+  "format": {
+    "delivery": "inline",
+    "pretty": false
+  }
+}
+```
+
+```json As Resource
+{
+  "format": {
+    "delivery": "resource",
+    "pretty": true
+  }
+}
+```
+</CodeGroup>
+
+Resource delivery is useful for large state objects to avoid inline token overhead.
+
+### Lemming Position Control
+
+<CodeGroup>
+```json No XY (reduce churn)
+{
+  "lemmings": {
+    "includeXY": "none"
+  }
+}
+```
+
+```json Changed Only
+{
+  "lemmings": {
+    "includeXY": "changed"
+  }
+}
+```
+
+```json All Positions
+{
+  "lemmings": {
+    "includeXY": "all"
+  }
+}
+```
+</CodeGroup>
+
+Use `none` for state polling to minimize token usage.
+
+## Troubleshooting
+
+<Accordion title="Connection Issues">
+  - Verify `npm run start-https` is running
+  - Check `LEMMINGS_MCP_BASE_URL` is correct
+  - Ensure `?e2e=1` parameter is present in path
+  - Check browser console for errors (if non-headless)
+</Accordion>
+
+<Accordion title="Tool Not Found">
+  - Verify tool name uses underscores: `state_get` not `state.get`
+  - Check MCP client version supports the tool naming convention
+  - Confirm server startup logs show tool registration
+</Accordion>
+
+<Accordion title="Vision Capture Fails">
+  - Playwright may need browser binaries: `npx playwright install`
+  - Check disk space for screenshot storage
+  - Verify `sessionId` is valid and session is active
+</Accordion>
+
+<Accordion title="Performance Issues">
+  - Use `compact` or `minimal` presets to reduce payload size
+  - Set `lemmings.includeXY: "none"` in deltas
+  - Limit `topK` in lemming summary
+  - Close unused sessions with `session.close`
+</Accordion>
+
+## Documentation Links
+
+<CardGroup cols={2}>
+  <Card title="MCP README" icon="book" href="https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/mcp/README.md">
+    Complete MCP documentation
+  </Card>
+  <Card title="Call Examples" icon="code" href="https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/mcp/call-examples.md">
+    Example tool calls
+  </Card>
+  <Card title="Interface Spec" icon="file-lines" href="https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/mcp/lemmings-mcp-interface-spec-memresources.md">
+    Protocol specification
+  </Card>
+  <Card title="Publishing Guide" icon="upload" href="https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/mcp/publishing.md">
+    Publishing to MCPB
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="URL Parameters" icon="link" href="/guides/url-parameters">
+    Configure game via URL
+  </Card>
+  <Card title="Level Editor" icon="pen-ruler" href="/guides/level-editing">
+    Create levels programmatically
+  </Card>
+</CardGroup>

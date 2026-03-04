@@ -1,0 +1,464 @@
+---
+title: Classic .lvl Level Format
+description: Binary specification for DOS and Windows Lemmings level files
+---
+
+## Overview
+
+The classic `.lvl` format is a fixed-size binary file used by DOS Lemmings, Windows Lemmings, and LemEdit. Each level file is exactly **2048 bytes** (0x0000 to 0x07FF).
+
+<Info>
+This specification describes the Windows version format. DOS levels use slightly different encodings but share the same basic structure.
+</Info>
+
+<Warning>
+All multi-byte values are stored in **little-endian** format. Values preceded by `0x` are hexadecimal.
+</Warning>
+
+---
+
+## File Structure
+
+| Byte Range | Section | Description |
+| --- | --- | --- |
+| 0x0000-0x001F | Globals | Level settings, skill counts, graphic set |
+| 0x0020-0x011F | Objects | Interactive objects (max 32) |
+| 0x0120-0x075F | Terrain | Terrain pieces (max 400) |
+| 0x0760-0x07DF | Steel Areas | Indestructible zones (max 32) |
+| 0x07E0-0x07FF | Level Name | 32-byte ASCII string |
+
+---
+
+## Global Settings (0x0000-0x001F)
+
+<ParamField path="0x0000-0x0001" type="uint16">
+  **Release Rate**: Spawn interval
+  - `0x0000` = slowest
+  - `0x00FA` = fastest (250)
+</ParamField>
+
+<ParamField path="0x0002-0x0003" type="uint16">
+  **Number of Lemmings**: Total lemmings in level
+  - Maximum: `0x0072` (114)
+  - Example: `0x0010` = 16 lemmings
+</ParamField>
+
+<ParamField path="0x0004-0x0005" type="uint16">
+  **Number to Rescue**: Lemmings needed to win
+  - Must be ≤ total lemmings
+</ParamField>
+
+<ParamField path="0x0006-0x0007" type="uint16">
+  **Time Limit**: Minutes
+  - Maximum: `0x00FF` (255)
+  - Values 1-9 work best
+  - Set to high value for unlimited time
+</ParamField>
+
+<ParamField path="0x0008-0x0017" type="uint16[8]">
+  **Skill Counts**: 2 bytes each (only lower byte used)
+  
+  Skill order:
+  1. Climber
+  2. Floater
+  3. Bomber
+  4. Blocker
+  5. Builder
+  6. Basher
+  7. Miner
+  8. Digger
+  
+  Maximum per skill: `0x00FA` (250)
+</ParamField>
+
+<ParamField path="0x0018-0x0019" type="uint16">
+  **Start Screen X Position**: Initial viewport position
+  - Range: `0x0000` to `0x04F0` (1264)
+  - Rounded to nearest multiple of 8
+</ParamField>
+
+<ParamField path="0x001A-0x001B" type="uint16">
+  **Normal Graphic Set**: Terrain/object theme
+  
+  | Value | Set |
+  | --- | --- |
+  | 0x0000 | Dirt |
+  | 0x0001 | Fire |
+  | 0x0002 | Squasher |
+  | 0x0003 | Pillar |
+  | 0x0004 | Crystal |
+  | 0x0005 | Brick |
+  | 0x0006 | Rock |
+  | 0x0007 | Snow |
+  | 0x0008 | Bubble |
+</ParamField>
+
+<ParamField path="0x001C-0x001D" type="uint16">
+  **Extended Graphic Set**: Ignored in Windows version
+</ParamField>
+
+<ParamField path="0x001E-0x001F" type="uint16">
+  **Reserved**: Use `0x0000`
+</ParamField>
+
+---
+
+## Objects Section (0x0020-0x011F)
+
+Each object is defined by an **8-byte block**. Maximum 32 objects.
+
+<Note>
+Fill unused bytes with `0x00` up to 0x0120 if fewer than 32 objects are used.
+</Note>
+
+### Object Block Structure
+
+<ParamField path="Bytes 0-1" type="int16">
+  **X Position**: Horizontal position
+  - Range: `0xFFF8` (-24) to `0x0638` (1576)
+  - Should be multiples of 8
+  - `0x0010` = position 0
+</ParamField>
+
+<ParamField path="Bytes 2-3" type="int16">
+  **Y Position**: Vertical position
+  - Range: `0xFFD7` (-41) to `0x009F` (159)
+  - Any value in range allowed
+</ParamField>
+
+<ParamField path="Bytes 4-5" type="uint16">
+  **Object ID**: Type of interactive object
+  - Range: `0x0000` to `0x000F`
+  - `0x0000` = Exit (in all sets)
+  - `0x0001` = Entrance (in all sets)
+  - Other IDs vary by graphic set (see [Object Reference](#object-reference))
+</ParamField>
+
+<ParamField path="Byte 6" type="uint8">
+  **Draw Modifier**:
+  - `0x80` = Do not overwrite existing terrain
+  - `0x40` = Must have terrain underneath to be visible
+  - `0x00` = Always draw full graphic
+</ParamField>
+
+<ParamField path="Byte 7" type="uint8">
+  **Orientation Modifier**:
+  - `0x8F` = Display upside-down
+  - `0x0F` = Display normally
+</ParamField>
+
+---
+
+## Terrain Section (0x0120-0x075F)
+
+Each terrain piece is defined by a **4-byte block**. Maximum 400 pieces.
+
+<Note>
+Fill unused bytes with `0xFF` up to 0x0760 if fewer than 400 pieces are used.
+</Note>
+
+### Terrain Block Structure
+
+Terrain data uses **bit-packed encoding** where some values span multiple bytes.
+
+<ParamField path="Bytes 0-1" type="packed">
+  **X Position + Modifiers** (12 bits position + 4 bits flags)
+  
+  Position range: `0x000` (-16) to `0x63F` (1583)
+  
+  **Modifier flags** (high nibble of first byte):
+  - `0x8` = Do not overwrite existing terrain
+  - `0x4` = Display upside-down
+  - `0x2` = Remove terrain (erase mode)
+  - `0x0` = Normal
+  
+  Flags can be combined (e.g., `0xC` = no-overwrite + upside-down)
+  
+  Example: `0xC011` = draw at x=1, no-overwrite, upside-down
+</ParamField>
+
+<ParamField path="Bytes 1-2" type="packed">
+  **Y Position** (9-bit value)
+  
+  Range: `0xEF0` (-38) to `0x518` (159)
+  
+  Encoding examples:
+  - `0xEF0` = -38
+  - `0x020` = 0
+  - `0x028` = 1
+  - `0x030` = 2
+  - `0x518` = 159
+</ParamField>
+
+<Warning>
+The Y position is a 9-bit value that "bleeds" into the terrain ID byte. Careful bit masking is required when parsing.
+</Warning>
+
+<ParamField path="Byte 3" type="uint8">
+  **Terrain ID**: Index of terrain piece
+  - Range: `0x00` to `0x3F` (0-63)
+  - Not all graphic sets provide all 64 pieces
+</ParamField>
+
+---
+
+## Steel Areas Section (0x0760-0x07DF)
+
+Each steel area is defined by a **4-byte block**. Maximum 32 areas.
+
+<Note>
+Fill unused bytes with `0x00` up to 0x07E0.
+</Note>
+
+### Steel Block Structure
+
+<ParamField path="Bytes 0-1" type="packed">
+  **X Position** (9-bit value)
+  
+  Range: `0x000` (-16) to `0xC78` (1580)
+  
+  Each unit represents **4 pixels**:
+  - `0x000` = -16
+  - `0x008` = -12
+  - `0x010` = -8
+  - `0x018` = -4
+</ParamField>
+
+<Warning>
+Steel X position is a 9-bit value that bleeds into the Y position byte.
+</Warning>
+
+<ParamField path="Byte 2" type="uint8">
+  **Y Position**
+  
+  Range: `0x00` to `0x27`
+  
+  Each unit represents **4 pixels**:
+  - `0x00` = 0
+  - `0x01` = 4
+  - `0x02` = 8
+  - `0x27` = 156
+</ParamField>
+
+<ParamField path="Byte 3" type="uint8">
+  **Area Size** (2 nibbles: X-size and Y-size)
+  
+  - High nibble (0-F): X-size in 4-pixel blocks
+  - Low nibble (0-F): Y-size in 4-pixel blocks
+  
+  Examples:
+  - `0x00` = 4×4 pixels
+  - `0x11` = 8×8 pixels
+  - `0x7F` = 32×64 pixels
+  - `0x23` = 12×16 pixels
+</ParamField>
+
+<ParamField path="Byte 4" type="uint8">
+  **Reserved**: Always `0x00`
+</ParamField>
+
+<Accordion title="Steel Area Example">
+  Bytes: `00 9F 52 00`
+  
+  Decoding:
+  - X position: -12 pixels
+  - Y position: 124 pixels
+  - Width: 24 pixels (6 blocks × 4)
+  - Height: 12 pixels (3 blocks × 4)
+</Accordion>
+
+---
+
+## Level Name (0x07E0-0x07FF)
+
+<ParamField path="0x07E0-0x07FF" type="char[32]">
+  **Level Name**: 32-byte ASCII string
+  
+  Pad unused bytes with `0x20` (space character)
+</ParamField>
+
+---
+
+## Object Reference
+
+Object IDs vary by graphic set. ID `0x0000` is always the exit, and `0x0001` is always the entrance.
+
+<Accordion title="Graphics Set 0 - Dirt">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | One-way block (left) |
+  | 0x0004 | One-way block (right) |
+  | 0x0005 | Water |
+  | 0x0006 | Bear trap |
+  | 0x0007 | Exit decoration (flames) |
+  | 0x0008 | Rock squishing trap |
+  | 0x0009 | Waving blue flag |
+  | 0x000A | 10-ton squishing trap |
+</Accordion>
+
+<Accordion title="Graphics Set 1 - Fire">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | One-way block (left) |
+  | 0x0004 | One-way block (right) |
+  | 0x0005 | Red lava |
+  | 0x0006 | Exit decoration (flames) |
+  | 0x0007 | Fire pit trap |
+  | 0x0008 | Fire shooter trap (left) |
+  | 0x0009 | Waving blue flag |
+  | 0x000A | Fire shooter trap (right) |
+</Accordion>
+
+<Accordion title="Graphics Set 2 - Squasher">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | One-way block (left) |
+  | 0x0004 | One-way block (right) |
+  | 0x0005 | Green liquid |
+  | 0x0006 | Exit decoration (flames) |
+  | 0x0007 | Waving blue flag |
+  | 0x0008 | Pillar squishing trap |
+  | 0x0009 | Spinning death trap |
+</Accordion>
+
+<Accordion title="Graphics Set 3 - Pillar">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | One-way block (left) |
+  | 0x0004 | One-way block (right) |
+  | 0x0005 | Water |
+  | 0x0006 | Exit decoration (flames) |
+  | 0x0007 | Waving blue flag |
+  | 0x0008 | Spinny rope trap |
+  | 0x0009 | Spikes from left trap |
+  | 0x000A | Spikes from right trap |
+</Accordion>
+
+<Accordion title="Graphics Set 4 - Crystal">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | Waving blue flag |
+  | 0x0004 | One-way block (left) |
+  | 0x0005 | One-way block (right) |
+  | 0x0006 | Sparkle water |
+  | 0x0007 | Slice trap |
+  | 0x0008 | Exit decoration (flames) |
+  | 0x0009 | Electrode trap |
+  | 0x000A | Zap trap |
+</Accordion>
+
+<Accordion title="Graphics Set 5 - Brick">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | One-way block (left) |
+  | 0x0004 | One-way block (right) |
+  | 0x0005 | Sandy water |
+  | 0x0006 | Hydraulic press trap |
+  | 0x0007 | Flatten wheel trap |
+  | 0x0008 | Waving blue flag |
+  | 0x0009 | Exit decoration (candy canes) |
+</Accordion>
+
+<Accordion title="Graphics Set 6 - Rock">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | One-way block (left) |
+  | 0x0004 | One-way block (right) |
+  | 0x0005 | Wavy tentacles (water) |
+  | 0x0006 | Tentacle grab trap |
+  | 0x0007 | Exit decoration (green thing) |
+  | 0x0008 | Licker from right trap |
+  | 0x0009 | Exit decoration (green thing) |
+  | 0x000A | Licker from right trap |
+  | 0x000B | Waving blue flag |
+</Accordion>
+
+<Accordion title="Graphics Set 7 - Snow">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | One-way block (left) |
+  | 0x0004 | One-way block (right) |
+  | 0x0005 | Ice water |
+  | 0x0006 | Exit decoration (red flag) |
+  | 0x0007 | Waving blue flag |
+  | 0x0008 | Icicle point trap |
+  | 0x0009 | Ice blast from left trap |
+</Accordion>
+
+<Accordion title="Graphics Set 8 - Bubble">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Waving green flag |
+  | 0x0003 | One-way block (left) |
+  | 0x0004 | One-way block (right) |
+  | 0x0005 | Bubble water |
+  | 0x0006 | Exit decoration (red thing) |
+  | 0x0007 | Waving blue flag |
+  | 0x0008 | Zapper from left trap |
+  | 0x0009 | Sucker from top trap |
+  | 0x000A | Gold thing |
+</Accordion>
+
+<Accordion title="Graphics Set 9 - Special (Holiday)">
+  | ID | Object |
+  | --- | --- |
+  | 0x0000 | Exit |
+  | 0x0001 | Entrance |
+  | 0x0002 | Gift box |
+  | 0x0003 | Exit decoration (flames) |
+  | 0x0004 | Bouncing snowman |
+  | 0x0005 | Twinkling Christmas lights |
+  | 0x0006 | Fireplace (bottom) |
+  | 0x0007 | Fireplace (top) |
+  | 0x0008 | Santa-in-the-box (bottom) |
+  | 0x0009 | Santa-in-the-box (top) |
+</Accordion>
+
+---
+
+## Parsing Notes
+
+<Warning>
+**Bit-packed fields** require careful handling:
+
+- Terrain X position and modifiers share bytes 0-1
+- Terrain Y position (9-bit) spans bytes 1-2
+- Steel X position (9-bit) spans bytes 0-1
+
+Use proper bit masking and shifting when parsing these fields.
+</Warning>
+
+<Info>
+When creating new levels, remember to:
+
+1. Fill unused object slots with `0x00`
+2. Fill unused terrain slots with `0xFF`
+3. Fill unused steel slots with `0x00`
+4. Pad level name with spaces (`0x20`)
+</Info>

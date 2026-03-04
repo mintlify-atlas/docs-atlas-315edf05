@@ -1,0 +1,149 @@
+---
+title: Game Controls
+description: Complete guide to mouse and keyboard controls in LemmingsJS-MIDI
+---
+
+## Mouse Controls
+
+### Gameplay
+
+- **Left click** on a lemming to select and apply the currently active skill
+- **Right click** on release rate buttons for instant min or max
+- **Right click** on Paws (Pause) button to reset speed to 1
+- **Click left/right side** of bottom bar on Paws to slow down or speed up
+
+### Minimap
+
+- **Click and drag** on minimap to reposition the main view
+- The minimap shows:
+  - Ground terrain at full resolution
+  - Entrance and exit locations
+  - Active lemmings
+  - Death locations
+
+### Debug Mode
+
+- **Right click** on Nuke button to toggle debug mode
+
+Debug mode displays:
+- Blue pixel under lemmings (engine position)
+- Red rectangles for triggers (traps, blockers, exit)
+- Cyan rectangles for steel areas
+- Orange and green for left/right arrow triggers
+
+## Keyboard Controls
+
+### Release Rate
+
+<Accordion title="Release Rate Controls">
+  | Key | Action |
+  | --- | --- |
+  | `1` | Decrease release rate by 1 |
+  | `Shift+1` | Decrease release rate to minimum |
+  | `2` | Increase release rate by 1 |
+  | `Shift+2` | Increase release rate to maximum |
+</Accordion>
+
+### Skill Selection
+
+<Accordion title="Skill Selection Controls">
+  | Key | Skill |
+  | --- | --- |
+  | `3` | Select Climber |
+  | `4` | Select Floater |
+  | `5` | Select Bomber |
+  | `6` | Select Blocker |
+  | `Q` | Select Builder |
+  | `W` | Select Basher |
+  | `E` | Select Miner |
+  | `R` | Select Digger |
+  | `Tab` | Cycle to next skill |
+  | `Shift+Tab` | Cycle to previous skill |
+  | `K` | Apply selected skill to selected lemming |
+</Accordion>
+
+### Time Control
+
+<Accordion title="Time Control">
+  | Key | Action |
+  | --- | --- |
+  | `Space` | Pause/resume |
+  | `]` | Step forward one tick (while paused) |
+  | `[` | Step backward one tick (while paused) |
+  | `Alt+]` | Step backward (mirror of step forward) |
+  | `B` | Toggle continuous reverse playback |
+</Accordion>
+
+### Game Speed
+
+<Accordion title="Speed Controls">
+  | Key | Action |
+  | --- | --- |
+  | `-` or `Numpad -` | Decrease game speed |
+  | `Shift+-` or `Shift+Numpad -` | Decrease game speed (faster steps) |
+  | `=` or `Numpad +` | Increase game speed |
+  | `Shift+=` or `Shift+Numpad +` | Increase game speed (faster steps) |
+  | `Alt+=` or `Alt+Numpad +` | Decrease speed (alternative binding) |
+  | `Alt+Shift+=` | Decrease speed (faster steps, alternative) |
+  | Right click Paws | Reset speed to 1 |
+</Accordion>
+
+<Note>
+  Speed is displayed on the Paws (Pause) button and represents a divisor of the original tick speed: `(60ms / gameSpeed)`
+</Note>
+
+### Viewport Control
+
+<Accordion title="Pan and Zoom">
+  | Key | Action |
+  | --- | --- |
+  | `Arrow Left` | Pan viewport left |
+  | `Arrow Right` | Pan viewport right |
+  | `Arrow Up` | Pan viewport up |
+  | `Arrow Down` | Pan viewport down |
+  | `Shift+Arrow` | Pan faster in any direction |
+  | `Z` | Zoom in |
+  | `Shift+Z` | Zoom in faster |
+  | `X` | Zoom out |
+  | `Shift+X` | Zoom out faster |
+  | `V` | Reset zoom to 2 |
+</Accordion>
+
+### Level Navigation
+
+<Accordion title="Level Navigation">
+  | Key | Action |
+  | --- | --- |
+  | `,` | Previous level |
+  | `.` | Next level |
+  | `Shift+,` | Previous level group |
+  | `Shift+.` | Next level group |
+  | `Backspace` | Restart current level |
+</Accordion>
+
+### Special Actions
+
+<Accordion title="Special Actions">
+  | Key | Action |
+  | --- | --- |
+  | `T` | Nuke (oh no!) |
+  | `Shift+T` | Instant nuke |
+  | `\` | Toggle debug mode |
+  | `F1` or `Shift+/` | Show keyboard shortcuts overlay |
+  | `Shift+\`` | Toggle editor mode (preview only) |
+</Accordion>
+
+## Configurable Keybindings
+
+All keyboard controls can be customized by editing `keybindings.json` in the project root. See the [Keyboard Shortcuts](/guides/keyboard-shortcuts) page for the complete reference and [Keybindings Design](https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/keybindings-design.md) for configuration details.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/guides/keyboard-shortcuts">
+    Complete keyboard shortcut reference
+  </Card>
+  <Card title="URL Parameters" icon="link" href="/guides/url-parameters">
+    Configure game settings via URL
+  </Card>
+</CardGroup>

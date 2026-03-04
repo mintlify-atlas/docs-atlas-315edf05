@@ -1,0 +1,175 @@
+---
+title: Input Control
+description: Execute named actions or inject low-level keyboard events
+---
+
+## input.action
+
+Execute a named action from `keybindings.json` using the first mapped key chord.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="action" type="string" required>
+  Action name from keybindings (e.g., `pause`, `resume`, `selectSkillBuilder`).
+</ParamField>
+
+<ParamField path="repeat" type="integer" default="1" optional>
+  Number of times to repeat the action.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Operation success status.
+</ResponseField>
+
+<ResponseField name="action" type="string" optional>
+  The action that was executed (present when `ok` is true).
+</ResponseField>
+
+<ResponseField name="repeat" type="integer" optional>
+  The repeat count (present when `ok` is true).
+</ResponseField>
+
+<ResponseField name="reason" type="string" optional>
+  Failure reason if `ok` is false: `unknown_action`.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "sessionId": "abc123def456",
+  "action": "pause",
+  "repeat": 1
+}
+```
+
+```json Success Response
+{
+  "ok": true,
+  "action": "pause",
+  "repeat": 1
+}
+```
+
+```json Failure Response
+{
+  "ok": false,
+  "reason": "unknown_action"
+}
+```
+</CodeGroup>
+
+<Note>
+  Available actions are returned in the `session.create` response under `keybindings.actions`. Common actions include:
+  - `pause`, `resume`, `restart`
+  - `selectSkillClimber`, `selectSkillFloater`, `selectSkillBomber`, etc.
+  - `applySkillToSelected`
+  - `increaseReleaseRate`, `decreaseReleaseRate`
+  - `nuke`
+</Note>
+
+---
+
+## input.keys
+
+Inject low-level key events (press, down, or up) into the game.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="keys" type="array<string>" optional>
+  Array of key chords to press (e.g., `["Space", "Control+Z"]`). Each chord is pressed in sequence.
+</ParamField>
+
+<ParamField path="repeat" type="integer" default="1" optional>
+  Number of times to repeat the entire key sequence.
+</ParamField>
+
+<ParamField path="events" type="array<object>" optional>
+  Array of low-level key events for precise control (alternative to `keys`).
+  <ParamField path="events[].type" type="enum<'down' | 'up' | 'press'>" required>
+    Event type: `down` (key down), `up` (key up), or `press` (down then up).
+  </ParamField>
+  <ParamField path="events[].key" type="string" required>
+    Key name or chord (e.g., `Space`, `Control+Z`).
+  </ParamField>
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Always returns `true`.
+</ResponseField>
+
+<ResponseField name="eventsInjected" type="integer" required>
+  Total number of key events injected.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Simple Keys Request
+{
+  "sessionId": "abc123def456",
+  "keys": ["Space", "ArrowRight"],
+  "repeat": 2
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "eventsInjected": 4
+}
+```
+
+```json Low-Level Events Request
+{
+  "sessionId": "abc123def456",
+  "events": [
+    { "type": "down", "key": "Shift" },
+    { "type": "press", "key": "ArrowRight" },
+    { "type": "up", "key": "Shift" }
+  ]
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "eventsInjected": 3
+}
+```
+</CodeGroup>
+
+<Note>
+  Key aliases are normalized internally:
+  - `Ctrl` → `Control`
+  - `Cmd`, `Command` → `Meta`
+  - `Option` → `Alt`
+  - Sided keys like `ControlLeft` → `Control`
+  
+  Use standard Playwright key names (e.g., `Space`, `Enter`, `ArrowLeft`, `Control+Z`).
+</Note>
+
+<Warning>
+  Use `input.action` for semantic actions when possible. `input.keys` is for low-level control when you need precise timing or key combinations not mapped to actions.
+</Warning>

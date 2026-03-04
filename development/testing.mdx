@@ -1,0 +1,263 @@
+---
+title: Testing
+description: Test suite, running tests, and coverage requirements
+---
+
+LemmingsJS-MIDI includes a comprehensive test suite using Mocha, with specialized scripts for different test categories and coverage enforcement.
+
+## Running Tests
+
+The primary test command runs the full suite:
+
+```bash
+npm test
+```
+
+This executes all test files matching the patterns defined in `scripts/runTests.js`.
+
+### Test Categories
+
+Dedicated scripts run common subsets of the suite:
+
+<CodeGroup>
+
+```bash Core Game Logic
+npm run test-core
+```
+
+```bash Performance Benchmarks
+npm run test-bench
+```
+
+```bash Editor Tests
+npm run test-editor
+```
+
+```bash Offline Tools
+npm run test-offline-tools
+```
+
+```bash CLI Tools
+npm run test-tools
+```
+
+```bash GitHub Workflows
+npm run test-workflow
+```
+
+```bash MCP Smoke Test
+npm run test-mcp-smoke
+```
+
+</CodeGroup>
+
+<Info>
+The MCP smoke test requires the HTTPS server to be running. Start it with `npm run start-https` in a separate terminal.
+</Info>
+
+### End-to-End Tests
+
+Playwright-based E2E tests verify browser behavior:
+
+<Steps>
+  <Step title="Install Playwright">
+    ```bash
+    npm run test-e2e:install
+    ```
+  </Step>
+  <Step title="Run E2E tests">
+    ```bash
+    npm run test-e2e
+    ```
+    
+    For interactive mode:
+    ```bash
+    npm run test-e2e:ui
+    ```
+  </Step>
+  <Step title="Run harness tests only">
+    ```bash
+    npm run test-e2e:harness
+    ```
+  </Step>
+</Steps>
+
+## Coverage
+
+### Overall Coverage
+
+Generate a coverage report for the entire codebase:
+
+```bash
+npm run coverage
+```
+
+View the HTML report:
+
+```bash
+npm run coverage-report
+```
+
+The project maintains **99.51% overall coverage** as shown in the README badge.
+
+### Coverage Thresholds
+
+Minimum coverage requirements (from `package.json`):
+
+- **Lines:** 71%
+- **Statements:** 71%
+- **Functions:** 72%
+- **Branches:** 85%
+
+### Editor Coverage
+
+The editor modules enforce **100% coverage**:
+
+```bash
+npm run coverage-editor
+```
+
+This command:
+- Includes only `js/editor/**` files
+- Requires 100% for lines, statements, functions, and branches
+- Fails if any coverage metric drops below 100%
+
+<Note>
+All editor code must maintain 100% test coverage. This ensures the level editor remains stable and reliable.
+</Note>
+
+### Excluded from Coverage
+
+The following paths are excluded (from `package.json` c8 config):
+
+- `coverage/**`
+- `test/**`
+- `js/xbrz/**`
+- `js/vendor/**`
+- Third-party libraries
+
+## Performance Benchmarks
+
+Standalone performance tests use Playwright and the E2E harness:
+
+<CodeGroup>
+
+```bash Performance Benchmark
+npm run bench-performance
+```
+
+```bash History Stress Test
+npm run bench-history
+```
+
+</CodeGroup>
+
+These benchmarks measure:
+- Lemming capacity (millions of simultaneous lemmings)
+- Game speed multipliers (up to 60x+)
+- History/rewind performance
+- Rendering and physics tick rates
+
+See `docs/performance-benchmarks.md` for detailed results.
+
+## Pre-Commit Checks
+
+Before committing, run the full validation workflow:
+
+<Steps>
+  <Step title="Check for undefined references">
+    ```bash
+    npm run check-undefined
+    ```
+    
+    Scans for uninitialized JavaScript references.
+  </Step>
+  <Step title="Run linter">
+    ```bash
+    npm run lint
+    ```
+    
+    Or auto-fix issues:
+    ```bash
+    npm run format
+    ```
+  </Step>
+  <Step title="Run all tests">
+    ```bash
+    npm test
+    ```
+  </Step>
+  <Step title="Check dependencies">
+    ```bash
+    npm run depcheck
+    ```
+    
+    Lists unused dependencies.
+  </Step>
+</Steps>
+
+<Note>
+GitHub Actions runs these same checks on Node 20 during the CI job.
+</Note>
+
+## Test Environment
+
+Tests require no special environment variables. The suite:
+
+- Creates a minimal `lemmings` object for testing
+- Writes temporary files to the OS temp directory
+- Cleans up automatically after completion
+
+### Excluded Tests
+
+Tests requiring significant manual setup or large downloads are documented in `docs/excluded-tests.md`. These are skipped in continuous integration but can be run locally when needed.
+
+## CI Workflow
+
+The GitHub Actions workflow mirrors local checks:
+
+1. `npm run lint` - ESLint validation
+2. `npm run check-undefined` - Verify no undefined references
+3. `npm test` - Full test suite on Node 20
+
+See `docs/ci.md` for CI configuration details.
+
+## Writing Tests
+
+When adding new functionality:
+
+1. **Add tests** for all new code paths
+2. **Maintain coverage** thresholds (especially 100% for editor code)
+3. **Use descriptive names** for test cases
+4. **Group related tests** in `describe` blocks
+5. **Clean up** temporary resources in `afterEach` hooks
+
+Example test structure:
+
+```javascript
+import { expect } from 'chai';
+import { YourModule } from '../js/YourModule.js';
+
+describe('YourModule', () => {
+  describe('someFunction', () => {
+    it('should handle basic case', () => {
+      const result = YourModule.someFunction(input);
+      expect(result).to.equal(expected);
+    });
+    
+    it('should handle edge case', () => {
+      // Test edge cases
+    });
+  });
+});
+```
+
+## MCP Client Compatibility
+
+Check MCP client compatibility:
+
+```bash
+npm run check-mcp-clients
+```
+
+This validates the MCP server against known client implementations.

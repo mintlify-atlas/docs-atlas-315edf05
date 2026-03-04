@@ -1,0 +1,304 @@
+---
+title: Resource URIs & Storage
+description: In-memory resource store for screenshots, state snapshots, and large artifacts
+---
+
+## Overview
+
+The MCP server stores large artifacts (screenshots, state snapshots, capture manifests) in an in-memory resource store rather than inlining them in tool responses. Resources are accessed via URIs and automatically managed with LRU eviction and TTL expiration.
+
+## Resource URIs
+
+Resources use a custom URI scheme that identifies the session and resource:
+
+```
+lemmings://sessions/{sessionId}/resources/{resourceId}
+```
+
+<Info>
+Resource IDs are generated using cryptographically random base64url-encoded strings (9 bytes by default).
+</Info>
+
+### Example URI
+
+```
+lemmings://sessions/AbC123XyZ/resources/DeF456UvW
+```
+
+## ResourceStore Class
+
+The `ResourceStore` class manages all in-memory resources for a session.
+
+### Constructor Options
+
+<ResponseField name="maxBytes" type="number" default="256 * 1024 * 1024">
+  Maximum total bytes stored across all resources (256 MB default)
+</ResponseField>
+
+<ResponseField name="ttlMs" type="number" default="10 * 60 * 1000">
+  Default time-to-live for resources in milliseconds (10 minutes default)
+</ResponseField>
+
+<ResponseField name="maxItems" type="number" default="5000">
+  Maximum number of resources to store
+</ResponseField>
+
+### Core Methods
+
+#### put()
+
+Store a new resource and return its URI.
+
+```javascript
+const stored = resourceStore.put({
+  sessionId: 'AbC123XyZ',
+  bytes: buffer,
+  mimeType: 'image/png',
+  meta: { kind: 'capture', target: 'gameCanvas', tag: 'frame-1' },
+  ttlMs: 600000  // Optional override
+});
+```
+
+<ResponseField name="sessionId" type="string" required>
+  Session identifier
+</ResponseField>
+
+<ResponseField name="bytes" type="Buffer" required>
+  Resource content as a Buffer
+</ResponseField>
+
+<ResponseField name="mimeType" type="string" required>
+  MIME type (e.g., `image/png`, `application/json`)
+</ResponseField>
+
+<ResponseField name="meta" type="object" default="{}">
+  Metadata object (kind, tag, target, etc.)
+</ResponseField>
+
+<ResponseField name="ttlMs" type="number">
+  Time-to-live override for this resource
+</ResponseField>
+
+**Returns:**
+
+```javascript
+{
+  uri: 'lemmings://sessions/AbC123XyZ/resources/DeF456UvW',
+  sizeBytes: 45120,
+  expiresAt: '2026-03-04T10:15:30.000Z'  // ISO 8601, null if no TTL
+}
+```
+
+#### get()
+
+Retrieve a resource by URI.
+
+```javascript
+const item = resourceStore.get('lemmings://sessions/AbC123XyZ/resources/DeF456UvW');
+```
+
+**Returns:**
+
+```javascript
+{
+  id: 'DeF456UvW',
+  uri: 'lemmings://sessions/AbC123XyZ/resources/DeF456UvW',
+  sessionId: 'AbC123XyZ',
+  mimeType: 'image/png',
+  meta: { kind: 'capture', target: 'gameCanvas' },
+  bytes: Buffer,
+  sizeBytes: 45120,
+  createdAt: '2026-03-04T10:10:30.000Z',
+  expiresAt: 1709550930000  // Timestamp in ms
+}
+```
+
+Returns `null` if:
+- URI format is invalid
+- Resource not found
+- Resource has expired
+
+<Note>
+Accessing a resource via `get()` moves it to the end of the LRU eviction queue (least-recently-used becomes most-recently-used).
+</Note>
+
+#### list()
+
+List available resources with metadata.
+
+```javascript
+const resources = resourceStore.list({ limit: 50 });
+```
+
+<ResponseField name="limit" type="number" default="200">
+  Maximum number of resources to return
+</ResponseField>
+
+**Returns an array:**
+
+```javascript
+[
+  {
+    uri: 'lemmings://sessions/AbC123XyZ/resources/DeF456UvW',
+    name: 'capture',  // Derived from meta.tag || meta.kind || id
+    mimeType: 'image/png',
+    sizeBytes: 45120,
+    createdAt: '2026-03-04T10:10:30.000Z',
+    expiresAt: '2026-03-04T10:20:30.000Z'
+  },
+  ...
+]
+```
+
+#### clearSession()
+
+Remove all resources for a specific session.
+
+```javascript
+resourceStore.clearSession('AbC123XyZ');
+```
+
+## Eviction Policy
+
+Resources are evicted automatically when:
+
+1. **Total bytes exceed `maxBytes`**: Oldest resources (by insertion order) are removed first
+2. **Total items exceed `maxItems`**: Same LRU eviction
+3. **Resource expires**: Checked on `get()` and `list()` access
+
+<Note>
+Eviction is triggered immediately after `put()` if limits are exceeded. The store uses a Map internally, which maintains insertion order for predictable LRU behavior.
+</Note>
+
+## Resource Lifecycle
+
+All resources for a session are cleared when:
+- `session.close` is called
+- The session is deleted from the sessions map
+
+## URI Pattern Matching
+
+The server uses a regular expression to parse resource URIs:
+
+```javascript
+const RESOURCE_URI_RE = /^lemmings:\/\/sessions\/([^/]+)\/resources\/([^/]+)$/;
+```
+
+Extract components:
+
+```javascript
+const match = RESOURCE_URI_RE.exec(uri);
+if (match) {
+  const sessionId = match[1];
+  const resourceId = match[2];
+}
+```
+
+## Common Resource Types
+
+### Screenshots
+
+<CodeGroup>
+
+```javascript Capture
+const result = await captureFrame(session, {
+  target: 'gameCanvas',
+  format: 'png',
+  delivery: 'resource',
+  tag: 'initial-state'
+});
+
+// result.frame.resourceUri
+```
+
+```javascript Metadata
+{
+  kind: 'capture',
+  target: 'gameCanvas',
+  tag: 'initial-state'
+}
+```
+
+</CodeGroup>
+
+### State Snapshots
+
+<CodeGroup>
+
+```javascript Large State
+const stored = session.resources.put({
+  sessionId: session.id,
+  bytes: Buffer.from(JSON.stringify(snapshot)),
+  mimeType: 'application/json',
+  meta: { kind: 'state-snapshot', preset: 'debug' }
+});
+```
+
+```javascript Metadata
+{
+  kind: 'state-snapshot',
+  preset: 'debug'
+}
+```
+
+</CodeGroup>
+
+### Capture Manifests
+
+<CodeGroup>
+
+```javascript Sequence Manifest
+const manifest = {
+  sequenceId: 'xyz123',
+  createdAt: nowIso(),
+  frames: [
+    { resourceUri: '...', tickIndex: 100, ... },
+    { resourceUri: '...', tickIndex: 101, ... }
+  ]
+};
+
+const stored = session.resources.put({
+  sessionId: session.id,
+  bytes: Buffer.from(JSON.stringify(manifest)),
+  mimeType: 'application/json',
+  meta: { kind: 'capture-manifest' }
+});
+```
+
+```javascript Metadata
+{
+  kind: 'capture-manifest'
+}
+```
+
+</CodeGroup>
+
+## MCP Integration
+
+The resource store integrates with the MCP protocol through:
+
+- **`resources/list`**: Returns resources with URIs, names, sizes, expiration
+- **`resources/read`**: Returns resource bytes for a given URI
+
+Clients can use these to:
+- Browse available resources
+- Fetch resource content on-demand
+- Download resources before they expire
+
+## Best Practices
+
+<Note>
+**Keep resource sizes reasonable**: Default 256 MB limit is shared across all resources. Large state snapshots or high-res screenshots consume quota quickly.
+</Note>
+
+<Note>
+**Use inline delivery for small data**: If content is under ~10 KB and frequently accessed, consider `delivery: 'inline'` with base64 encoding instead of resource storage.
+</Note>
+
+<Note>
+**Monitor expiration times**: Resources expire after 10 minutes by default. Copy or process them promptly when returned in tool responses.
+</Note>
+
+<Note>
+**Clear sessions when done**: Always call `session.close` to free resources and prevent memory leaks.
+</Note>

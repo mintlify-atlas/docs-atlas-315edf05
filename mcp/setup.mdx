@@ -1,0 +1,309 @@
+---
+title: Installing and Configuring MCP Server
+description: Setup instructions for LemmingsJS-MIDI MCP server with different clients
+---
+
+This guide walks through installing and configuring the LemmingsJS-MIDI MCP server for use with various AI clients.
+
+## Prerequisites
+
+<Steps>
+  <Step title="Install Node.js 20+">
+    Download and install Node.js from [nodejs.org](https://nodejs.org). Verify installation:
+
+    ```bash
+    node --version  # Should be v20.0.0 or higher
+    ```
+  </Step>
+
+  <Step title="Clone the Repository">
+    ```bash
+    git clone https://github.com/doublemover/LemmingsJS-MIDI
+    cd LemmingsJS-MIDI
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    ```bash
+    npm install
+    ```
+
+    This installs:
+    - `@modelcontextprotocol/sdk` - MCP protocol implementation
+    - `@playwright/test` - Browser automation
+    - `ws` - WebSocket server for spectator mode
+    - `zod` - Schema validation
+  </Step>
+
+  <Step title="Install Playwright Chromium">
+    ```bash
+    npm run test-e2e:install
+    ```
+
+    This downloads Chromium for headless browser sessions.
+
+    <Note>
+      Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` if you want to use your system Chrome instead.
+    </Note>
+  </Step>
+</Steps>
+
+## Start the Game Server
+
+The MCP server requires the LemmingsJS-MIDI game to be running on a local HTTPS server:
+
+<Tabs>
+  <Tab title="HTTPS (Recommended)">
+    ```bash
+    npm run start-https
+    ```
+
+    This starts the game at `https://localhost:8080` using self-signed certificates in `certs/`.
+
+    <Warning>
+      Self-signed certificates trigger browser warnings. The MCP server automatically accepts these via `ignoreHTTPSErrors: true` in Playwright.
+    </Warning>
+  </Tab>
+  <Tab title="HTTP (Alternative)">
+    ```bash
+    npm start
+    ```
+
+    This starts the game at `http://localhost:8080`.
+
+    Set the environment variable when configuring your MCP client:
+    ```bash
+    LEMMINGS_MCP_BASE_URL=http://localhost:8080
+    ```
+  </Tab>
+</Tabs>
+
+## Client Configuration
+
+The MCP server uses **stdio transport**, which means the client launches it as a subprocess and communicates via standard input/output.
+
+### Codex CLI
+
+Add to your `config.toml` (typically at `~/.config/codex/config.toml`):
+
+```toml
+[mcp_servers.lemmings]
+  command = "node"
+  args = ["/absolute/path/to/LemmingsJS-MIDI/mcp/server.js"]
+
+[mcp_servers.lemmings.env]
+  LEMMINGS_MCP_BASE_URL = "https://localhost:8080"
+  LEMMINGS_MCP_PATH = "/?e2e=1"
+```
+
+<Note>
+  **Important:** Use the absolute path to `server.js`. Replace `/absolute/path/to/LemmingsJS-MIDI` with your actual clone location.
+</Note>
+
+### Claude Desktop
+
+Add to your Claude Desktop configuration file:
+
+<Tabs>
+  <Tab title="macOS">
+    Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "lemmings": {
+          "command": "node",
+          "args": ["/Users/yourname/Development/LemmingsJS-MIDI/mcp/server.js"],
+          "env": {
+            "LEMMINGS_MCP_BASE_URL": "https://localhost:8080",
+            "LEMMINGS_MCP_PATH": "/?e2e=1"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Windows">
+    Edit `%APPDATA%\Claude\claude_desktop_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "lemmings": {
+          "command": "node",
+          "args": ["C:\\Users\\yourname\\Development\\LemmingsJS-MIDI\\mcp\\server.js"],
+          "env": {
+            "LEMMINGS_MCP_BASE_URL": "https://localhost:8080",
+            "LEMMINGS_MCP_PATH": "/?e2e=1"
+          }
+        }
+      }
+    }
+    ```
+
+    <Note>
+      Use double backslashes (`\\`) in Windows paths for proper JSON escaping.
+    </Note>
+  </Tab>
+  <Tab title="Linux">
+    Edit `~/.config/Claude/claude_desktop_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "lemmings": {
+          "command": "node",
+          "args": ["/home/yourname/Development/LemmingsJS-MIDI/mcp/server.js"],
+          "env": {
+            "LEMMINGS_MCP_BASE_URL": "https://localhost:8080",
+            "LEMMINGS_MCP_PATH": "/?e2e=1"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Restart Claude Desktop after editing the configuration.
+
+### VS Code
+
+If using an MCP-compatible extension in VS Code, add to your workspace or user settings:
+
+```json
+{
+  "mcp.servers": {
+    "lemmings": {
+      "command": "node",
+      "args": ["/absolute/path/to/LemmingsJS-MIDI/mcp/server.js"],
+      "env": {
+        "LEMMINGS_MCP_BASE_URL": "https://localhost:8080",
+        "LEMMINGS_MCP_PATH": "/?e2e=1"
+      }
+    }
+  }
+}
+```
+
+### LM Studio
+
+LM Studio supports stdio MCP servers. Add the configuration in the MCP settings panel:
+
+```json
+{
+  "servers": {
+    "lemmings": {
+      "command": "node",
+      "args": ["/absolute/path/to/LemmingsJS-MIDI/mcp/server.js"],
+      "env": {
+        "LEMMINGS_MCP_BASE_URL": "https://localhost:8080",
+        "LEMMINGS_MCP_PATH": "/?e2e=1"
+      }
+    }
+  }
+}
+```
+
+<Note>
+  HTTP transport for LM Studio is not yet implemented. Use stdio for now.
+</Note>
+
+## Environment Variables
+
+The MCP server supports these environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LEMMINGS_MCP_BASE_URL` | `https://localhost:8080` | Base URL of the game server |
+| `LEMMINGS_MCP_PATH` | `/?e2e=1` | Path with query params to append to base URL |
+
+### Customizing the Game URL
+
+You can customize the level, difficulty, and other parameters via the path:
+
+```bash
+LEMMINGS_MCP_PATH="/?e2e=1&v=2&d=3&l=15"
+```
+
+This loads:
+- `e2e=1` - E2E harness enabled
+- `v=2` - Version 2 (Oh no! More Lemmings)
+- `d=3` - Difficulty 3 (Tricky)
+- `l=15` - Level 15
+
+See [URL Parameters](/guides/url-parameters) for all available options.
+
+## Verifying Installation
+
+<Steps>
+  <Step title="Start the game server">
+    ```bash
+    npm run start-https
+    ```
+
+    Keep this running in a separate terminal.
+  </Step>
+
+  <Step title="Run the MCP smoke test">
+    ```bash
+    npm run test-mcp-smoke
+    ```
+
+    This runs a basic test suite that:
+    - Creates a session
+    - Fetches game state
+    - Applies an input action
+    - Captures a screenshot
+    - Closes the session
+  </Step>
+
+  <Step title="Check your AI client">
+    Open your configured AI client (Codex CLI, Claude Desktop, etc.) and verify the Lemmings tools are available.
+
+    In Codex CLI:
+    ```bash
+    codex tools list
+    ```
+
+    You should see tools like `state_get`, `lemming_select`, `skill_apply`, etc.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### "Session not found" errors
+
+The MCP server maintains session state in memory. Each tool call must include a valid `sessionId` from a previous `session_create` call.
+
+### "harness_unavailable" errors
+
+This means the E2E harness didn't load. Check:
+
+1. The game URL includes `?e2e=1`
+2. The game server is running at the configured base URL
+3. The browser can reach the game (check for CORS/certificate issues)
+
+### Playwright timeouts
+
+If the game takes longer than 30 seconds to load:
+
+- Check network speed
+- Verify the game assets are available
+- Try increasing the timeout in `mcp/server.js` (line 1503)
+
+### Browser not found
+
+If Playwright can't find Chromium:
+
+```bash
+npx playwright install chromium
+```
+
+Or set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` and ensure Chrome/Chromium is in your PATH.
+
+## Next Steps
+
+- Try the [Quick Start](/mcp/quickstart) example
+- Explore [available tools](/mcp/tools/session)
+- Learn about [state inspection](/mcp/tools/state-inspection)

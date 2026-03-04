@@ -1,0 +1,411 @@
+---
+title: 'Level Editor'
+description: 'Full-featured in-browser level editor with NeoLemmix format support'
+---
+
+## Overview
+
+LemmingsJS-MIDI includes a comprehensive standalone level editor with full support for NeoLemmix `.nxlv` format, real-time playtest mode, and 100% test coverage.
+
+<CardGroup cols={2}>
+  <Card title="NeoLemmix Format" icon="file-code">
+    Import/export `.nxlv` and classic `.lvl` files
+  </Card>
+  <Card title="Real-time Playtest" icon="play">
+    Test levels instantly without leaving the editor
+  </Card>
+  <Card title="Full Undo/Redo" icon="clock-rotate-left">
+    Complete history system with per-action snapshots
+  </Card>
+  <Card title="100% Coverage" icon="shield-check">
+    All editor logic is fully tested
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+Access the editor at:
+- **Online:** [https://doublemover.github.io/LemmingsJS-MIDI/editor.html](https://doublemover.github.io/LemmingsJS-MIDI/editor.html)
+- **Local:** `https://localhost:8080/editor.html` after running `npm start`
+
+## Editor Interface
+
+### Layout
+
+The editor features a three-panel layout:
+
+1. **Left Panel:** Tools and brush settings
+2. **Center Canvas:** Visual editing workspace with status bar
+3. **Right Panel:** Level settings, selection inspector, and validation
+
+### Header Controls
+
+<Tabs>
+  <Tab title="Level Selection">
+    - **Pack:** Choose the level pack to edit
+    - **Group:** Select level group within pack
+    - **Level:** Choose level index within group
+    - **Saved:** Access levels saved to localStorage
+  </Tab>
+  <Tab title="File Operations">
+    - **New Level:** Create a blank level
+    - **Save:** Store to localStorage
+    - **Export:** Download as `.nxlv` format
+    - **Export LVL:** Download as classic `.lvl` file
+    - **Import:** Load `.nxlv` from disk
+    - **Import LVL:** Load classic `.lvl` file
+  </Tab>
+  <Tab title="History">
+    - **Undo:** Revert last change
+    - **Redo:** Reapply undone change
+    - **Dirty Status:** Shows saved/unsaved state
+  </Tab>
+</Tabs>
+
+## Tools
+
+### Selection and Placement Tools
+
+<Tabs>
+  <Tab title="Select">
+    Click to select and move existing items.
+    
+    **Features:**
+    - Single click to select an item
+    - Shift-click for multi-select
+    - Drag to move selection
+    - Alt-drag to clone before moving
+    - Marquee selection with drag
+    - Arrow keys to nudge (Shift for grid size)
+  </Tab>
+  <Tab title="Terrain">
+    Place terrain pieces from the palette.
+    
+    **Options:**
+    - Choose from style-specific terrain pieces
+    - Snap to grid for precise placement
+    - Set rotation (0°, 90°, 180°, 270°)
+    - Flip horizontal/vertical
+    - No Overwrite flag prevents overlap
+    - Erase flag removes terrain where placed
+  </Tab>
+  <Tab title="Object">
+    Place interactive gadgets (traps, decorations).
+    
+    **Gadget Types:**
+    - Traps and hazards
+    - Decorative objects
+    - Interactive elements
+    - One-way arrows
+  </Tab>
+  <Tab title="Trigger">
+    Place trigger regions for gadget activation.
+    
+    **Configuration:**
+    - Set trigger skill requirement
+    - Define trigger area size
+    - Link with pairing value
+  </Tab>
+</Tabs>
+
+### Specialized Tools
+
+<Tabs>
+  <Tab title="Entrance">
+    Place entrance spawners where lemmings emerge.
+    
+    **Properties:**
+    - Set lemming count per entrance
+    - Configure pairing for linked entrances
+    - Position and rotation
+  </Tab>
+  <Tab title="Exit">
+    Place exit points where lemmings are saved.
+    
+    **Features:**
+    - Multiple exits supported
+    - Rotation and positioning
+    - Visual preview in palette
+  </Tab>
+  <Tab title="Steel">
+    Draw indestructible steel areas.
+    
+    **Usage:**
+    - Click and drag to define rectangle
+    - Prevents digging/mining/bashing
+    - Resize via inspector
+    - Editor-only visualization
+  </Tab>
+  <Tab title="Brush">
+    Paint terrain along a path.
+    
+    **How it works:**
+    - Select terrain piece from palette
+    - Set brush size (1-64)
+    - Drag to stamp repeatedly along grid
+    - Uses grid spacing for placement
+    
+    <Info>
+    The brush tool stamps the selected terrain piece repeatedly, not pixel-by-pixel painting, since Lemmings uses fixed terrain pieces.
+    </Info>
+  </Tab>
+  <Tab title="Eraser">
+    Remove terrain or gadgets.
+    
+    **Settings:**
+    - Erase terrain by default
+    - Enable "Erase gadgets" to remove objects
+    - Click or drag to erase
+  </Tab>
+</Tabs>
+
+## Brush Settings Panel
+
+### Grid and Snap
+
+- **Snap to grid:** Enable/disable automatic grid snapping
+- **Grid size:** Set grid spacing (default: 4 pixels)
+- **Brush size:** Set brush stamp size (1-64)
+- **Erase gadgets:** Allow eraser to remove objects
+
+## Palette System
+
+### Palette Tabs
+
+Switch between three content types:
+
+1. **Terrain:** Ground pieces and structures
+2. **Objects:** Interactive gadgets and decorations
+3. **Triggers:** Trigger-only objects
+
+### Palette Controls
+
+- **Filter:** Search by name or ID
+- **View mode:** Toggle between List and Grid views
+- **Previews:** Generated from sprites and cached in browser storage
+
+<Note>
+Palette previews are automatically generated from the sprite data and cached in localStorage for performance.
+</Note>
+
+## Level Settings Inspector
+
+Configure level properties in the right panel:
+
+<Tabs>
+  <Tab title="Basic Info">
+    - **Title:** Level name shown in menus
+    - **Style:** Tileset for terrain and objects
+    - **Width/Height:** Level dimensions in pixels
+  </Tab>
+  <Tab title="Gameplay">
+    - **Lemmings:** Total lemmings released
+    - **Save Req:** Number needed to win
+    - **Time Limit:** Minutes (or INFINITE)
+    - **Spawn Interval:** Release rate in ticks
+  </Tab>
+  <Tab title="Camera">
+    - **Start X:** Initial camera X position
+    - **Start Y:** Initial camera Y position
+  </Tab>
+</Tabs>
+
+## Selection Inspector
+
+When an item is selected, the inspector shows:
+
+### Position and Size
+
+- **X, Y:** Position in pixels
+- **Width, Height:** Dimensions (if applicable)
+- **Rotate:** 0°, 90°, 180°, or 270°
+
+### Item-Specific Properties
+
+- **Skill:** Required skill for triggers
+- **Lemmings:** Count emitted by entrances
+- **Pairing:** Link value for gadget pairs
+
+### Placement Flags
+
+<Tabs>
+  <Tab title="Transform">
+    - **Flip H:** Flip horizontally
+    - **Flip V:** Flip vertically
+  </Tab>
+  <Tab title="Terrain Flags">
+    - **No Overwrite:** Don't place over existing terrain
+    - **Erase:** Remove terrain where placed
+    - **One Way:** Allow movement in one direction only
+  </Tab>
+</Tabs>
+
+### Layer Controls
+
+- **Bring to Front:** Move to top layer
+- **Move Forward:** Move up one layer
+- **Move Backward:** Move down one layer
+- **Send to Back:** Move to bottom layer
+
+## Workflows
+
+### Creating a New Level
+
+1. Click **New Level** in the header
+2. Set level properties (title, size, style)
+3. Place terrain pieces using the Terrain tool
+4. Add entrance and exit gadgets
+5. Place steel areas if needed
+6. Configure level settings (lemming count, time limit)
+7. Use **Playtest** to test gameplay
+8. **Save** to localStorage or **Export** to `.nxlv` file
+
+### Editing Existing Levels
+
+1. Select level from Pack/Group/Level dropdowns
+2. Or choose from **Saved** levels
+3. Or **Import** a `.nxlv` or `.lvl` file
+4. Make your changes using the tools
+5. **Save** or **Export** when done
+
+### Selection and Movement
+
+<Tabs>
+  <Tab title="Select">
+    - Click item to select
+    - Shift-click to add to selection
+    - Click empty area to deselect
+    - Drag marquee for area selection
+  </Tab>
+  <Tab title="Move">
+    - Drag selected items to move
+    - Arrow keys to nudge by 1 pixel
+    - Shift+Arrow to nudge by grid size
+    - Alt-drag to duplicate before moving
+  </Tab>
+  <Tab title="Transform">
+    - Use inspector rotation dropdown
+    - Toggle Flip H/V checkboxes
+    - Drag resize handles (single selection)
+    - Layer order buttons to reorder
+  </Tab>
+</Tabs>
+
+## Playtest Mode
+
+Test your level without leaving the editor:
+
+- **Activate:** Click **Playtest** button or press `P`
+- **Behavior:** Level runs with full game engine
+- **Return:** Click **Playtest** again to return to editing
+- **State:** Viewport is preserved during playtest toggle
+
+<Info>
+Playtest mode uses the full game engine, so you can test all gameplay mechanics including skills, release rate, and win conditions.
+</Info>
+
+## Validation System
+
+The validation panel catches common issues:
+
+### Common Issues Detected
+
+- Missing entrances or exits
+- Invalid level dimensions
+- Insufficient skill counts
+- Invalid time limits
+- Overlapping steel areas
+- Missing required properties
+
+### Quick Fix Actions
+
+Some validation errors include quick-fix buttons to automatically correct the issue.
+
+<Warning>
+Fix all validation errors before exporting to ensure your level can be loaded correctly.
+</Warning>
+
+## File Formats
+
+### NeoLemmix (.nxlv)
+
+The primary editor format:
+
+- **Text-based:** Human-readable level data
+- **Round-trip:** Perfect preservation of all data
+- **Sections:** Headers, terrain, gadgets, steel areas
+- **Extensions:** Supports editor-specific metadata
+
+### Classic LVL (.lvl)
+
+**Import:** Converts classic levels to editor format  
+**Export:** Generates classic-compatible binary format
+
+<Note>
+Some NeoLemmix features may not round-trip perfectly through classic .lvl export/import due to format limitations.
+</Note>
+
+## Local Storage
+
+Levels are automatically stored in browser localStorage:
+
+- **Index:** `lemmings.editor.levels`
+- **Level data:** `lemmings.editor.level.<id>`
+- **Palette cache:** Sprite previews cached for performance
+
+## Keyboard Shortcuts
+
+**Editor Mode:**
+- `Shift+` `` ` ``: Toggle editor mode
+- `P`: Toggle playtest
+- `Delete`: Remove selected item
+- `Ctrl+Z`: Undo
+- `Ctrl+Y`: Redo
+- `Ctrl+C` / `Ctrl+V`: Copy/Paste
+- Arrow keys: Nudge selection
+- Shift+Arrow: Nudge by grid size
+
+**Canvas Navigation:**
+- Mouse wheel: Zoom
+- Arrow keys: Pan (also works in editor mode)
+- `V`: Reset zoom to 2x
+
+## Architecture
+
+### Data Model
+
+- **EditorLevel:** Core data structure holding all level data
+- **NxlvParser:** Deserializes `.nxlv` text format
+- **NxlvWriter:** Serializes to `.nxlv` text format
+- **StyleRegistry:** Style metadata and piece lookup
+
+### Preview Runtime
+
+- **EditorLevelLoader:** Converts editor data to game `Level`
+- **Classic assets:** Uses `VGAGR*.DAT` and `GROUND*O.DAT` files
+- **Engine rendering:** Full game engine renders preview
+
+### Testing
+
+All editor logic in `js/editor/**` has 100% coverage:
+
+```bash
+# Run editor tests
+npm run test-editor
+
+# Enforce 100% coverage
+npm run coverage-editor
+```
+
+## Limitations
+
+### Current Non-Goals
+
+- Full NeoLemmix gimmick support (zombies, water, clock terrain)
+- NeoLemmix high-res style pack formats
+- Custom pack building (NXP/NXMI writer)
+- Asset import pipeline
+
+<Info>
+The editor focuses on classic Lemmings level creation with NeoLemmix file format compatibility for workflow integration.
+</Info>

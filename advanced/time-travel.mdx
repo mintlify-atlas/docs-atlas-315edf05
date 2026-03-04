@@ -1,0 +1,163 @@
+---
+title: Time Travel
+description: Time travel, tick stepping, and reverse playback in LemmingsJS-MIDI
+---
+
+## Overview
+
+LemmingsJS-MIDI includes powerful time manipulation capabilities that allow you to control the game simulation with precision. You can pause, step through individual ticks, and even run the simulation in reverse at full speed.
+
+## Tick-by-Tick Stepping
+
+### Forward Stepping
+
+While the game is paused, you can step forward through the simulation one tick at a time:
+
+- Press `]` to step forward one tick
+- Press `Shift+]` for faster stepping
+
+### Backward Stepping
+
+You can also step backward through the simulation:
+
+- Press `[` to step backward one tick while paused
+- Press `Alt+]` as an alternative backward step key
+
+<Note>
+Tick stepping is deterministic and allows you to examine the exact state of the game at any moment in time.
+</Note>
+
+## Reverse Playback
+
+The engine supports full-speed reverse playback, allowing you to rewind the game while it's running:
+
+### Controls
+
+- Press `B` to toggle continuous reverse playback
+- The game runs backwards at the current speed factor
+- All game logic is applied in reverse
+
+### Performance
+
+Reverse playback runs at full speed with minimal overhead:
+
+- Capable of running backwards at >60x original game speed
+- Efficient history buffer management
+- Real-time rendering in both directions
+
+<Info>
+For performance testing of reverse playback, use the `benchReverse` mode. See the [Performance](/advanced/performance) page for details.
+</Info>
+
+## Speed Control
+
+Control the simulation speed to suit your needs:
+
+### Keyboard Controls
+
+- Press `-` / `=` to decrease/increase game speed
+- Press `Shift+-` / `Shift+=` for faster speed adjustments
+- Right-click the Paws (Pause) button to reset speed to 1x
+- Click left/right side of the bottom bar on Paws to adjust speed
+
+### Speed Display
+
+The current speed is displayed on the Paws (Pause) button:
+
+- Speed is shown as a divisor of original tick speed: `60ms / gameSpeed`
+- Speed can range from 0.1x to 120x in debug mode
+- Normal range: 1x to 100x
+
+### URL Parameters
+
+```
+https://localhost:8080/?speed=10
+```
+
+Set the initial game speed using the `speed` (or `s`) URL parameter.
+
+## E2E Time Control API
+
+When using the E2E harness (`?e2e=1`), you have programmatic access to time control:
+
+```javascript
+// Pause the simulation
+window.__E2E__.pause();
+
+// Resume the simulation
+window.__E2E__.resume();
+
+// Step forward or backward by N ticks
+window.__E2E__.step(10);  // forward 10 ticks
+window.__E2E__.step(-5);  // backward 5 ticks
+
+// Seek to a specific tick
+window.__E2E__.seek(tickIndex);
+
+// Set speed factor
+window.__E2E__.setSpeed(10);
+
+// Toggle reverse playback
+window.__E2E__.toggleReverse();
+
+// Start/stop reverse
+window.__E2E__.startReverse();
+window.__E2E__.stopReverse();
+```
+
+## History Buffer
+
+The engine maintains a history buffer to enable time travel:
+
+### How It Works
+
+- Game state is recorded at each tick
+- Deltas are stored efficiently to minimize memory usage
+- Buffer size is managed automatically
+- LRU eviction when memory limits are reached
+
+### Stress Testing
+
+Use the history stress test to find buffer limits:
+
+```bash
+npm run bench-history -- --target=60000 --duration=60000
+```
+
+This runs at fixed speed factors and reports:
+- History span (number of ticks retained)
+- Heap usage (if available)
+
+<Warning>
+Large simulations with many lemmings will consume more memory in the history buffer. Monitor heap usage when running extended reverse playback sessions.
+</Warning>
+
+## Use Cases
+
+### Debugging
+
+- Step through individual ticks to identify issues
+- Rewind to examine what went wrong
+- Pause at critical moments
+
+### Analysis
+
+- Study lemming behavior frame-by-frame
+- Measure exact timing of events
+- Verify deterministic behavior
+
+### Automation
+
+- AI agents can use tick stepping for deterministic control
+- Precise state inspection at any moment
+- Repeatable test scenarios
+
+## MCP Integration
+
+The MCP server provides time control tools:
+
+- `time.pause` - Pause the simulation
+- `time.resume` - Resume the simulation  
+- `time.step` - Step forward or backward by N ticks
+
+See the [MCP Time Control Tools](/mcp/tools/time-control) for details.

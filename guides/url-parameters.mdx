@@ -1,0 +1,267 @@
+---
+title: URL Parameters
+description: Configure game settings using URL query parameters
+---
+
+## Overview
+
+LemmingsJS-MIDI supports URL query parameters to configure game settings, select levels, enable debug features, and more. Parameters can use either full names or short aliases (shown in brackets).
+
+<Note>
+  Use the `shortcut` or `_` parameter to prefer short query keys when the game updates the URL.
+</Note>
+
+## Game Selection
+
+### Version (`v`)
+
+Select which Lemmings game to play:
+
+<Tabs>
+  <Tab title="Games">
+    | Value | Game | Example |
+    | --- | --- | --- |
+    | `1` | Lemmings (default) | `?version=1` |
+    | `2` | Oh no! More Lemmings | `?version=2` |
+    | `3` | Xmas 1991 | `?version=3` |
+    | `4` | Xmas 1992 | `?version=4` |
+    | `5` | Holiday 1993 | `?version=5` |
+    | `6` | Holiday 1994 | `?version=6` |
+  </Tab>
+  
+  <Tab title="Examples">
+    <CodeGroup>
+    ```url Lemmings
+    https://doublemover.github.io/LemmingsJS-MIDI?version=1
+    ```
+    
+    ```url Oh no! More Lemmings
+    https://doublemover.github.io/LemmingsJS-MIDI?version=2
+    ```
+    
+    ```url Xmas 1991
+    https://doublemover.github.io/LemmingsJS-MIDI?version=3
+    ```
+    </CodeGroup>
+  </Tab>
+</Tabs>
+
+### Difficulty (`d`)
+
+Select difficulty level (1-6, default: 1):
+
+```url
+?difficulty=3
+```
+
+Difficulty levels correspond to:
+1. Fun
+2. Tricky
+3. Taxing
+4. Mayhem
+5-6. (varies by version)
+
+### Level (`l`)
+
+Select level number (1-100, default: 1):
+
+```url
+?level=15
+```
+
+### Combined Example
+
+```url
+?version=2&difficulty=4&level=30
+```
+
+Loads "Oh no! More Lemmings", Mayhem difficulty, level 30.
+
+## Gameplay Modifiers
+
+### Speed (`s`)
+
+Set initial game speed (0-100, default: 1):
+
+```url
+?speed=5
+```
+
+Speed is a divisor of the original tick speed: `(60ms / gameSpeed)`
+
+### Cheat Mode (`c`)
+
+Enable unlimited skills (default: false):
+
+```url
+?cheat=true
+```
+
+<Note>
+  Cheat mode gives you 99 of every skill, making any level solvable.
+</Note>
+
+### Endless Mode (`e`)
+
+Disable time limit and win/loss conditions:
+
+```url
+?endless=true
+```
+
+Useful for:
+- Exploring levels
+- Testing mechanics
+- Sandbox experimentation
+
+### Extra Lemmings (`ex`)
+
+Spawn additional lemmings per entrance (1-1000, default: 0):
+
+```url
+?extra=100
+```
+
+<Note>
+  The engine supports over 25,000,000 simultaneous lemmings, but practical limits depend on your hardware.
+</Note>
+
+## Display Settings
+
+### Scale (`sc`)
+
+Set initial zoom level (.0125-8, default: 2):
+
+```url
+?scale=4
+```
+
+Higher values zoom in closer, lower values zoom out further.
+
+## Debug & Performance
+
+### Debug Mode (`dbg`)
+
+Enable debug visualization (default: false):
+
+```url
+?debug=true
+```
+
+Shows:
+- Blue pixels under lemmings (engine position)
+- Red rectangles for triggers
+- Cyan rectangles for steel
+- Orange/green for directional triggers
+
+Also unlocks extended speed range:
+- Below 1 in 0.1 steps
+- Up to 120 in steps of 10
+
+### Benchmark Mode (`b`)
+
+Run performance benchmark:
+
+```url
+?bench=true
+```
+
+Spawns lemmings endlessly at max rate and displays:
+- **T**: Current tick
+- **TPS**: Ticks per second
+- **Active**: Active lemming count
+- **Spawned**: Total spawned count
+
+Benchmark sequence:
+1. Measures extra lemming capacity
+2. Runs multiple entrance count tests
+
+### Performance API (`pa`)
+
+Enable Performance API instrumentation:
+
+```url
+?performanceAPI=true
+```
+
+Enables detailed timing measurements for development and profiling.
+
+## URL Management
+
+### Short Query Keys (`shortcut` or `_`)
+
+Prefer short parameter names when updating the URL:
+
+```url
+?shortcut=true
+```
+
+or
+
+```url
+?_=true
+```
+
+With this enabled, the game will use `v`, `d`, `l`, `s`, etc. instead of full names.
+
+## Common Combinations
+
+<Accordion title="Quick Start Examples">
+  <CodeGroup>
+  ```url Fast-paced Challenge
+  ?version=2&difficulty=4&level=1&speed=10
+  ```
+  
+  ```url Sandbox Mode
+  ?endless=true&cheat=true&debug=true
+  ```
+  
+  ```url Stress Test
+  ?extra=1000&speed=50&bench=true
+  ```
+  
+  ```url Holiday Special
+  ?version=3&difficulty=1&level=1&scale=3
+  ```
+  </CodeGroup>
+</Accordion>
+
+## Parameter Reference
+
+<Accordion title="Complete Parameter List">
+  | Parameter | Alias | Type | Range | Default | Description |
+  | --- | --- | --- | --- | --- | --- |
+  | `version` | `v` | int | 1-6 | 1 | Game version |
+  | `difficulty` | `d` | int | 1-6 | 1 | Difficulty level |
+  | `level` | `l` | int | 1-100 | 1 | Level number |
+  | `speed` | `s` | number | 0-100 | 1 | Game speed multiplier |
+  | `cheat` | `c` | bool | - | false | Unlimited skills |
+  | `debug` | `dbg` | bool | - | false | Debug visualization |
+  | `bench` | `b` | bool | - | false | Benchmark mode |
+  | `endless` | `e` | bool | - | false | No time/win limits |
+  | `scale` | `sc` | number | .0125-8 | 2 | Initial zoom level |
+  | `extra` | `ex` | int | 1-1000 | 0 | Extra lemmings per spawn |
+  | `performanceAPI` | `pa` | bool | - | false | Performance instrumentation |
+  | `shortcut` | `_` | bool | - | false | Use short query keys |
+</Accordion>
+
+## E2E Testing
+
+The `e2e=1` parameter is used internally for automated testing and MCP sessions:
+
+```url
+?e2e=1
+```
+
+This parameter enables programmatic control interfaces for automation.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Game Controls" icon="gamepad" href="/guides/controls">
+    Mouse and keyboard control overview
+  </Card>
+  <Card title="Level Editor" icon="pen-ruler" href="/guides/level-editing">
+    Create and edit custom levels
+  </Card>
+</CardGroup>

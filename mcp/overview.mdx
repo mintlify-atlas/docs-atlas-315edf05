@@ -1,0 +1,197 @@
+---
+title: MCP Server Overview
+description: Architecture and capabilities of the LemmingsJS-MIDI MCP server
+---
+
+The LemmingsJS-MIDI MCP (Model Context Protocol) server enables AI agents and automation tools to play, inspect, and edit Lemmings levels programmatically.
+
+## What is the MCP Server?
+
+The MCP server provides a bridge between AI assistants (like Claude) and the LemmingsJS-MIDI game engine through a standardized protocol. It exposes tools for:
+
+- **Game automation** - Control game state, timing, and input
+- **State inspection** - Read game state with configurable detail levels
+- **Vision capture** - Take screenshots for visual AI analysis
+- **Level editing** - Create and modify levels programmatically
+- **Interactive spectating** - Watch and optionally control the game
+
+## Architecture
+
+### Transport Layer
+
+The MCP server uses **stdio transport** for communication, making it compatible with:
+
+- Codex CLI
+- Claude Desktop
+- Claude Code
+- VS Code
+- LM Studio
+
+### Browser Automation
+
+The server uses [Playwright](https://playwright.dev/) with Chromium to:
+
+1. Launch a headless (or visible) browser session
+2. Load the LemmingsJS-MIDI game with the E2E harness enabled
+3. Inject commands and extract state via JavaScript evaluation
+4. Capture screenshots from specific canvases or regions
+
+### E2E Harness
+
+The game includes an E2E (end-to-end) testing harness exposed via `window.__E2E__` that provides:
+
+- `getState()` - Returns structured game state snapshot
+- `pause()` / `resume()` - Timer control
+- `step(count)` - Tick-by-tick advancement
+- State delta tracking between ticks
+
+<Note>
+  The E2E harness is enabled by adding `?e2e=1` to the game URL. The MCP server does this automatically.
+</Note>
+
+## Core Capabilities
+
+### Session Management
+
+Each MCP connection creates isolated browser sessions with:
+
+- Independent Playwright browser instances
+- Configurable viewport size and device pixel ratio
+- Resource storage for screenshots and state exports
+- Event queue for tracking actions and changes
+
+### State Protocols
+
+The server supports two state modes:
+
+<Tabs>
+  <Tab title="Compact (Default)">
+    Returns essential game state with pruned lemming data. Ideal for most automation tasks.
+
+    **Features:**
+    - Timer, victory, level metadata
+    - Skill counts and availability
+    - Lemming summaries (selected + top K by priority)
+    - Pruned fields based on skill availability
+  </Tab>
+  <Tab title="Debug">
+    Returns complete raw state including all internal fields. Useful for debugging and advanced inspection.
+
+    **Features:**
+    - All view, stage, and MIDI state
+    - Complete lemming arrays (configurable limit)
+    - Full editor state when applicable
+  </Tab>
+</Tabs>
+
+### Delta Tracking
+
+The server tracks state changes between ticks and provides delta queries to:
+
+- Minimize data transfer for high-speed automation
+- Focus on specific subsystems (lemmings, skills, victory, etc.)
+- Control field-level granularity for lemming changes
+- Optionally exclude X/Y coordinates to reduce noise
+
+### Event System
+
+The server maintains an event queue with three modes:
+
+| Mode | Description |
+|------|-------------|
+| `none` | No events recorded |
+| `minimal` | Non-agent events with trimmed fields (default) |
+| `full` | All events including agent actions with full data |
+
+Events are automatically attached to tool responses and include:
+
+- Source: `system`, `agent`, or `human`
+- Type: `input`, `capture`, `error`, `watch-trigger`
+- Summary: Human-readable description
+- Tick index and timestamp
+- Resource URIs for associated data
+
+### Resource Management
+
+The server includes an in-memory resource store for:
+
+- **Screenshots** - PNG/JPEG/WebP captures
+- **State exports** - Large JSON snapshots
+- **Capture manifests** - Multi-frame sequences
+
+Resources are:
+
+- Stored with configurable TTL and size limits
+- Accessible via `lemmings://sessions/{sessionId}/resources/{id}` URIs
+- Automatically cleared when sessions close
+- LRU evicted when limits are exceeded
+
+<Warning>
+  Resources are stored in memory only. They are not persisted to disk and will be lost when the server restarts.
+</Warning>
+
+## Tool Naming
+
+The MCP server exposes tools with **underscored names** to satisfy host validation requirements:
+
+```
+state.get → state_get
+lemming.select → lemming_select
+vision.capture → vision_capture
+```
+
+Legacy aliases with `lemmings.` prefix (e.g., `lemmings.state_get`) are supported for backward compatibility.
+
+## Spectator Mode
+
+Sessions can optionally enable an **interactive spectator server** that:
+
+- Serves a web UI at `http://127.0.0.1:{port}`
+- Streams live JPEG frames via WebSocket
+- Allows human input (keyboard and mouse) when enabled
+- Runs independently from MCP tool calls
+
+This enables "watch-along" scenarios where humans can observe or assist the AI agent.
+
+## Watch System
+
+The server supports **watch patterns** that trigger actions based on:
+
+- **everyTicks** - Fire every N ticks
+- **onChange** - Fire when a JSON pointer value changes
+
+Watch actions include:
+
+- `emitSummary` - Add event with lemming summary and state pointers
+- `capture` - Take screenshot and store as resource
+
+Watches are useful for:
+
+- Monitoring level progress
+- Detecting critical moments (nuke, victory, etc.)
+- Capturing visual sequences at intervals
+
+## Performance
+
+The MCP server is designed for:
+
+- **High-speed automation** - Delta tracking minimizes overhead
+- **Large state spaces** - Configurable pruning and limits
+- **Concurrent sessions** - Multiple isolated browser instances
+- **Efficient vision** - Canvas-level capture without full page renders
+
+<Note>
+  The game engine can run at >60x normal speed with 450,000 lemmings. The MCP server's bottleneck is typically Playwright communication, not the game itself.
+</Note>
+
+## Compatibility
+
+The MCP server requires:
+
+- Node.js 20+
+- `@modelcontextprotocol/sdk` ^1.0.0
+- `@playwright/test` ^1.49.1
+- `ws` ^8.18.1
+- `zod` ^3.25.76
+
+Chromium is downloaded by Playwright unless `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` is set.

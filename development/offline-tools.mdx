@@ -1,0 +1,418 @@
+---
+title: Offline Tools
+description: Asset extraction and offline tooling for LemmingsJS-MIDI
+---
+
+LemmingsJS-MIDI includes Node.js scripts for offline asset work, including sprite export, patching, and level pack manipulation. These utilities are for local development and are not part of the runtime site.
+
+## NodeFileProvider
+
+All offline tools use the `NodeFileProvider` class to read level packs. This provider can load files directly from:
+
+- Folders
+- `.zip` archives
+- `.tar` archives
+- `.tar.gz` / `.tgz` archives
+- `.rar` archives
+
+<Info>
+You can keep level packs compressed while running these tools. No manual extraction required.
+</Info>
+
+## Export Tools
+
+### Export All Packs
+
+Export panel, lemming, and ground sprites for all configured packs:
+
+```bash
+node tools/exportAllPacks.js [pack1 pack2 ...]
+```
+
+- If no pack names are provided, reads `config.json` to determine pack paths
+- Assets are saved in `exports/export_<pack>` directories
+
+**npm script:**
+
+```bash
+npm run export-all-packs
+```
+
+### Export All Sprites
+
+Export the skill panel, lemming animations, and ground object sprites for a single pack:
+
+```bash
+node tools/exportAllSprites.js [packPath] [outDir]
+```
+
+**Parameters:**
+- `packPath` - Defaults to the first entry in `config.json`
+- `outDir` - Defaults to `exports/<pack>_all`
+
+**npm script:**
+
+```bash
+npm run export-all-sprites
+```
+
+### Export Panel Sprite
+
+Save the skill panel background as `panelSprite.png`:
+
+```bash
+node tools/exportPanelSprite.js [packPath] [outDir]
+```
+
+**npm script:**
+
+```bash
+npm run export-panel-sprite
+```
+
+Output: `exports/panel_export/panelSprite.png`
+
+### Export Lemmings Sprites
+
+Export every lemming animation as individual PNGs plus sprite sheets:
+
+```bash
+node tools/exportLemmingsSprites.js [packPath] [outDir]
+```
+
+**Parameters:**
+- `outDir` - Defaults to `exports/<pack>_sprites`
+
+**npm script:**
+
+```bash
+npm run export-lemmings-sprites
+```
+
+Exports:
+- Individual animation frames
+- Sprite sheets for each animation
+- All lemming states (walker, climber, floater, etc.)
+
+### Export Ground Images
+
+Write terrain and object images from one ground set to PNGs:
+
+```bash
+node tools/exportGroundImages.js [packPath] [groundIndex] [outDir]
+```
+
+**Parameters:**
+- `groundIndex` - Selects the `GROUND?O.DAT` and `VGAGR?.DAT` pair
+
+**npm script:**
+
+```bash
+npm run export-ground-images
+```
+
+## Asset Management
+
+### List Sprites
+
+List sprite names, dimensions, and frame counts:
+
+```bash
+node tools/listSprites.js [packPath] [--out file]
+```
+
+**Options:**
+- `--out file` - Write the list to a file instead of stdout
+
+**npm script:**
+
+```bash
+npm run list-sprites
+```
+
+Output includes:
+- Sprite name
+- Width and height
+- Frame count
+- Offset information
+
+### Patch Sprites
+
+Replace sprites in an existing DAT archive with PNG data:
+
+```bash
+node tools/patchSprites.js [--sheet-orientation=horizontal|vertical] <target DAT> <png dir> <out DAT>
+```
+
+**Options:**
+- `--sheet-orientation` - Specify layout for multi-frame sprites
+  - `horizontal` - Frames arranged left to right
+  - `vertical` - Frames arranged top to bottom
+
+**npm script:**
+
+```bash
+npm run patch-sprites
+```
+
+<Note>
+Multiple frames can be supplied as a sprite sheet when `--sheet-orientation` matches the sheet layout.
+</Note>
+
+## Level Pack Tools
+
+### Pack Levels
+
+Compress a directory of 2048-byte `.lvl` files into a single DAT file:
+
+```bash
+node tools/packLevels.js <level dir> <out DAT>
+```
+
+Useful for building custom level packs.
+
+**npm script:**
+
+```bash
+npm run pack-levels
+```
+
+### Archive Directory
+
+Create compressed archives from a folder:
+
+```bash
+node -e "import('./tools/archiveDir.js').then(m => m.archiveDir('dir', 'zip'))"
+```
+
+**Supported formats:**
+- `zip`
+- `tar.gz`
+- `rar`
+
+Example workflow:
+
+<Steps>
+  <Step title="Export assets">
+    ```bash
+    npm run export-all-packs
+    ```
+  </Step>
+  <Step title="Create archives">
+    <CodeGroup>
+    
+    ```bash ZIP
+    zip -r export_lemmings.zip exports/export_lemmings
+    ```
+    
+    ```bash TAR.GZ
+    tar -czf export_lemmings.tgz exports/export_lemmings
+    ```
+    
+    ```bash RAR
+    rar a export_lemmings.rar exports/export_lemmings
+    ```
+    
+    </CodeGroup>
+  </Step>
+  <Step title="Clean up exports">
+    ```bash
+    npm run clean-exports
+    ```
+  </Step>
+</Steps>
+
+## Cleanup
+
+### Clean Exports
+
+Remove all `export_*` directories created by the export scripts:
+
+```bash
+node tools/cleanExports.js
+```
+
+**npm script:**
+
+```bash
+npm run clean-exports
+```
+
+This removes:
+- `exports/export_*` directories
+- All exported sprite folders
+- Temporary export files
+
+## Export Workflows
+
+### Full Asset Export
+
+Export all assets from all configured packs:
+
+<Steps>
+  <Step title="Run export">
+    ```bash
+    npm run export-all-packs
+    ```
+  </Step>
+  <Step title="Find exports">
+    Assets are saved in:
+    ```
+    exports/
+    ├── export_lemmings/
+    ├── export_ohno/
+    ├── export_xmas91/
+    └── ...
+    ```
+  </Step>
+  <Step title="Archive if needed">
+    ```bash
+    zip -r exports.zip exports/
+    ```
+  </Step>
+</Steps>
+
+### Single Pack Export
+
+Export sprites for one specific pack:
+
+<Steps>
+  <Step title="Export panel">
+    ```bash
+    npm run export-panel-sprite
+    ```
+  </Step>
+  <Step title="Export lemmings">
+    ```bash
+    npm run export-lemmings-sprites
+    ```
+  </Step>
+  <Step title="Export ground objects">
+    ```bash
+    npm run export-ground-images
+    ```
+  </Step>
+</Steps>
+
+Or use the combined script:
+
+```bash
+npm run export-all-sprites
+```
+
+### Custom Sprite Editing
+
+Modify and re-pack sprites:
+
+<Steps>
+  <Step title="Export original sprites">
+    ```bash
+    npm run export-lemmings-sprites
+    ```
+  </Step>
+  <Step title="Edit PNGs">
+    Modify the exported PNG files in `exports/<pack>_sprites/`
+  </Step>
+  <Step title="Patch DAT file">
+    ```bash
+    npm run patch-sprites -- --sheet-orientation=horizontal original.dat exports/<pack>_sprites/ modified.dat
+    ```
+  </Step>
+  <Step title="Test changes">
+    Update `config.json` to use the modified DAT file and test in-game.
+  </Step>
+</Steps>
+
+## Output Directory
+
+<Info>
+All exported assets are saved under the `exports/` directory by default.
+</Info>
+
+Directory structure:
+
+```
+exports/
+├── export_lemmings/      # Full pack export
+│   ├── panel/
+│   ├── lemmings/
+│   └── ground/
+├── panel_export/         # Panel sprite only
+├── lemmings_sprites/     # Lemming animations
+└── ground_export/        # Ground objects
+```
+
+## Supported Level Packs
+
+The tools work with all supported game versions:
+
+1. Lemmings (original)
+2. Oh no! More Lemmings
+3. Xmas 1991
+4. Xmas 1992
+5. Holiday 1993
+6. Holiday 1994
+
+Packs must follow the NeoLemmix folder layout (see `docs/levelpacks.md`).
+
+## Advanced Usage
+
+### Custom Pack Paths
+
+Specify pack paths directly:
+
+```bash
+node tools/exportAllSprites.js /path/to/custom/pack ./custom-output
+```
+
+### Programmatic Access
+
+Import and use tools in your own scripts:
+
+```javascript
+import { exportAllSprites } from './tools/exportAllSprites.js';
+import { NodeFileProvider } from './tools/NodeFileProvider.js';
+
+const provider = new NodeFileProvider('/path/to/pack.zip');
+const sprites = await exportAllSprites(provider, './output');
+```
+
+### Batch Processing
+
+Process multiple packs programmatically:
+
+```javascript
+import { exportAllPacks } from './tools/exportAllPacks.js';
+
+const packs = ['lemmings', 'ohno', 'xmas91'];
+await exportAllPacks(packs);
+```
+
+## Troubleshooting
+
+### Archive Format Issues
+
+If you encounter errors reading archives:
+
+1. Verify the archive is not corrupted
+2. Ensure the format is supported (`.zip`, `.tar`, `.tar.gz`, `.tgz`, `.rar`)
+3. Check file permissions
+
+### Missing Sprites
+
+If exports are incomplete:
+
+1. Verify the pack path in `config.json`
+2. Check that DAT files are present in the pack directory
+3. Ensure the pack follows NeoLemmix folder structure
+
+### Performance
+
+Exporting large packs may take time:
+
+- Panel sprites: Fast (single image)
+- Lemming sprites: Moderate (many frames)
+- Ground sprites: Variable (depends on object count)
+- All packs: Several minutes for complete export
+
+Consider using single-pack exports for faster iteration during development.

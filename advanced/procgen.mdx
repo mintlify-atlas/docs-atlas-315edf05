@@ -1,0 +1,234 @@
+---
+title: Procedural Generation
+description: Endless procedural level generation with dynamic ground extension
+---
+
+## Overview
+
+LemmingsJS-MIDI includes a procedural generation mode (`procgen.html`) that creates an endless, automatically extending level. The ground generates dynamically as lemmings advance, creating an infinite playfield with continuous spawning.
+
+## Procgen Mode Features
+
+- **Endless spawning** - Lemmings never stop releasing
+- **Dynamic ground generation** - Ground extends as needed to keep lemmings moving
+- **Full-viewport canvas** - No HUD, minimap, or cursor
+- **Smooth camera follow** - Camera tracks the rightmost lemming
+- **Oh No! More Lemmings assets** - Uses fire theme (groundSet 1)
+
+## Access Procgen Mode
+
+Open the standalone procgen experience:
+
+```
+https://localhost:8080/procgen.html
+```
+
+## Technical Specification
+
+### Fixed Constants
+
+```javascript
+{
+  gameType: "OHNO",           // Oh No! More Lemmings pack
+  style: "fire",              // Ground set 1 (fire theme)
+  levelWidth: 8192,           // Long runway without reallocation
+  levelHeight: 160,           // Default classic height
+  releaseRate: 50,            // Fixed release rate
+  releaseCount: 50,           // Concurrent lemmings
+  saveRequirement: 0,         // No win condition
+  timeLimit: INFINITE,        // Never ends
+  groundHeight: 8,            // Ground thickness (pixels)
+  initialGroundWidth: 240,    // Starting ground span
+  groundSegmentWidth: 160,    // Extension segment size
+  groundExtensionThreshold: 80, // Trigger distance for extension
+  lookaheadDistance: 240,     // How far ahead to check
+  cameraFollowLerp: 0.12      // Camera smoothing factor
+}
+```
+
+### Level Bootstrap
+
+The procgen level is created programmatically:
+
+1. Create an empty editor level
+2. Convert via `loadEditorLevel`
+3. Add single entrance gadget (`PIECE: 1`) near left edge
+4. Place initial ground beneath entrance for safe landing
+5. Set `endless = true` to disable spawning limits
+
+<CodeGroup>
+```javascript Initial Setup
+// Bootstrap procgen level
+const level = createEmptyEditorLevel();
+level.entrance = { piece: 1, x: 100, y: 50 };
+level.ground = createInitialGround();
+
+const gameLevel = loadEditorLevel(level);
+gameLevel.endless = true;
+```
+
+```javascript Ground Creation
+function createInitialGround() {
+  return {
+    x: 80,
+    y: 100,
+    width: 240,
+    height: 8,
+    paletteIndex: 1
+  };
+}
+```
+</CodeGroup>
+
+## Procedural Ground Rules
+
+Ground extends dynamically based on lemming position:
+
+### Extension Logic
+
+```javascript
+// Track the rightmost lemming
+const rightmostX = Math.max(...activeLemmings.map(lem => lem.x));
+
+// Check if extension is needed
+if (rightmostX + lookaheadDistance >= groundEndX - threshold) {
+  appendGroundSegment(groundEndX, segmentWidth);
+}
+```
+
+### Ground Placement
+
+- New segments start at `groundEndX` (current ground end)
+- Segment width is fixed at 160 pixels
+- Extension triggers 80 pixels before ground ends
+- Lookahead distance is 240 pixels (1.5× segment width)
+- Placement is clamped within level bounds (0 to 8192)
+
+### Ground Appearance
+
+Current implementation:
+- Single palette index (simple solid color)
+- No terrain sprites yet
+- Fire theme color scheme from Oh No! More Lemmings
+
+<Info>
+Future versions may include varied terrain sprites and elevation changes for more interesting procedural landscapes.
+</Info>
+
+## Camera Follow System
+
+The camera smoothly tracks the rightmost lemming:
+
+### Follow Algorithm
+
+```javascript
+// Each tick:
+const rightmostX = findRightmostLemming().x;
+const targetViewX = rightmostX - (viewportWidth / 2);
+
+// Smooth interpolation
+currentViewX = lerp(currentViewX, targetViewX, 0.12);
+
+// Clamp to level bounds
+currentViewX = clamp(currentViewX, 0, levelWidth - viewportWidth);
+```
+
+### Camera Properties
+
+- **Lerp factor**: 0.12 (smooth following, no snapping)
+- **Centering**: Rightmost lemming is kept in center of viewport
+- **Bounds**: Camera stops at level edges
+- **No manual pan**: User cannot pan the view in procgen mode
+
+<Note>
+The lerp factor of 0.12 provides a good balance between responsive tracking and smooth motion. Lower values create more lag, higher values make motion more jerky.
+</Note>
+
+## Visual Style
+
+### Full Viewport
+
+- Canvas fills entire browser window
+- No HUD elements (no skill buttons, no timer)
+- No minimap overlay
+- No mouse cursor visible
+- Pure gameplay focus
+
+### OHNO Theme
+
+Uses Oh No! More Lemmings visual assets:
+- Fire ground set (lava/volcanic theme)
+- Classic lemming sprites from second pack
+- Entrance gadgets from OHNO pack
+
+## E2E Testing
+
+Procgen mode includes smoke tests via the E2E harness:
+
+```javascript
+// Check page loads
+const ready = window.__E2E__.getState().ready;
+assert(ready === true);
+
+// Verify spawning
+const initialCount = getLemmingCount();
+step(100);
+const afterCount = getLemmingCount();
+assert(afterCount > initialCount);
+
+// Verify camera movement
+const initialViewX = getViewX();
+step(200);
+const afterViewX = getViewX();
+assert(afterViewX > initialViewX);
+```
+
+### Test Coverage
+
+- Page loads and harness initializes
+- Lemmings spawn over time
+- Lemming count increases
+- View X increases as lemmings advance
+- Ground extends dynamically
+
+## Use Cases
+
+### Screensaver/Demo Mode
+
+Procgen mode makes an excellent ambient display:
+- Endless gameplay with no interaction needed
+- Visually interesting as lemmings progress
+- No game over condition
+
+### Stress Testing
+
+Useful for performance testing:
+- Continuous spawning tests memory management
+- Ground extension tests dynamic level modification
+- Camera follow tests viewport updates
+- Long-running sessions test stability
+
+### Experimental Gameplay
+
+Foundation for future game modes:
+- Random obstacle generation
+- Difficulty ramping
+- Procedural challenge creation
+- Infinite runner variations
+
+<Warning>
+Procgen mode runs indefinitely. Memory usage will grow over time as more lemmings spawn and history accumulates. Monitor browser memory usage for extended sessions.
+</Warning>
+
+## Future Enhancements
+
+Planned improvements for procgen mode:
+
+- **Terrain sprites**: Replace solid color with varied terrain textures
+- **Elevation changes**: Add hills, valleys, and platforms
+- **Obstacles**: Random traps, gaps, and hazards
+- **Difficulty curve**: Gradually increasing challenge
+- **Exits**: Periodic safe zones for lemmings
+- **Scoring**: Track distance traveled and lemmings saved
+
+See [docs/roadmap.md](https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/roadmap.md) for the full feature roadmap.

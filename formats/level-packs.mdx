@@ -1,0 +1,449 @@
+---
+title: Level Pack Structure
+description: Organization and file layout for NeoLemmix-style level packs
+---
+
+## Overview
+
+LemmingsJS-MIDI can load NeoLemmix-style level packs from either:
+- **Directory packs** - folder structures with metadata files
+- **`.nxp` archives** - single-file packages created by the Pack Toolkit
+
+Both formats share the same internal structure and file organization.
+
+<Info>
+The Node tools use `NodeFileProvider` to load files from either directories or archives transparently.
+</Info>
+
+---
+
+## Directory Structure
+
+```
+levels/
+  PackName/
+    info.nxmi              # Pack metadata
+    logo.png               # Title screen icon
+    background.png         # Menu background
+    music.nxmi             # Global music configuration
+    postview.nxmi          # Result screen messages
+    levels.nxmi            # Rank/group hierarchy
+    talisman.nxmi          # Optional achievements
+    
+    Fun/                   # Rank folder
+      levels.nxmi          # Level listing for this rank
+      rank_graphic.png     # Rank badge image
+      01_JustDig.nxlv      # Individual level files
+      02_OnlyFloaters.nxlv
+      03_Tailor.nxlv
+    
+    Tricky/                # Another rank folder
+      levels.nxmi
+      01_Builder.nxlv
+      02_Miner.nxlv
+    
+    music/                 # Custom music tracks
+      track_01.ogg
+      track_02.it
+      track_03.mod
+    
+    styles/                # Custom graphic sets
+      custom_dirt/
+        terrain/
+        objects/
+        style.nxmi
+    
+    sprites/               # Custom lemming sprites
+      scheme.nxmi
+      lemming_walk.png
+    
+    replays/               # Saved replays
+      Fun_01_solution.nxrp
+    
+    files/                 # Additional resources
+      sign_play.png
+      skill_panels.png
+    
+    SYSTEM.DAT             # NeoLemmix configuration
+    TALISMAN.DAT           # Talisman definitions
+```
+
+---
+
+## Core Metadata Files
+
+### info.nxmi
+
+Defines pack title, author, and scrolling text shown on menus.
+
+```text
+TITLE Lemmings Redux
+AUTHOR Community Pack Team
+VERSION 2021-07-15
+
+$SCROLLER
+  LINE Welcome to Lemmings Redux!
+  LINE Built with love by the community
+  LINE Thanks to DMA Design for the original
+  LINE Have fun!
+$END
+```
+
+<ParamField path="TITLE" type="string">
+  Pack display name shown in menus
+</ParamField>
+
+<ParamField path="AUTHOR" type="string">
+  Creator or team name
+</ParamField>
+
+<ParamField path="VERSION" type="string">
+  Version identifier (dates, numbers, or labels)
+</ParamField>
+
+<ParamField path="$SCROLLER" type="section">
+  Optional scrolling text block
+  
+  Contains multiple `LINE` entries that scroll on the title screen
+</ParamField>
+
+---
+
+### levels.nxmi (Pack Root)
+
+Defines the rank hierarchy and organization.
+
+```text
+BASE
+
+$GROUP
+  NAME Fun
+  FOLDER Fun
+$END
+
+$GROUP
+  NAME Tricky
+  FOLDER Tricky
+$END
+
+$GROUP
+  NAME Taxing
+  FOLDER Taxing
+$END
+
+$GROUP
+  NAME Mayhem
+  FOLDER Mayhem
+$END
+```
+
+<ParamField path="BASE" type="keyword">
+  Marks this folder as a pack boundary (required at pack root)
+</ParamField>
+
+<ParamField path="$GROUP" type="section">
+  Defines a rank or level group
+  
+  - `NAME` - Display name for the rank
+  - `FOLDER` - Subdirectory containing the rank's levels
+</ParamField>
+
+<Note>
+Groups can also use `INCLUDE` to recursively include other `levels.nxmi` files from subdirectories.
+</Note>
+
+```text
+$GROUP
+  NAME Bonus Levels
+  INCLUDE ../Shared/Bonus/levels.nxmi
+$END
+```
+
+---
+
+### levels.nxmi (Rank Folder)
+
+Lists individual levels within a rank, defining their display order.
+
+```text
+LEVEL 01_JustDig.nxlv
+LEVEL 02_OnlyFloaters.nxlv
+LEVEL 03_Tailor.nxlv
+LEVEL 04_HereWeGo.nxlv
+LEVEL 05_Cascade.nxlv
+```
+
+<ParamField path="LEVEL" type="string">
+  Filename of a `.nxlv` level file in this directory
+  
+  Levels appear in the order listed
+</ParamField>
+
+<Warning>
+**Visibility Rule**: Only files explicitly listed in `levels.nxmi` are shown in-game. Unlisted levels remain hidden but can still be shipped with the pack.
+</Warning>
+
+---
+
+### music.nxmi
+
+Configures default music rotation and track selection.
+
+```text
+RANDOM
+TRACK orig_dirt
+TRACK orig_rock;ohno_rock
+TRACK !custom1;custom2
+```
+
+<ParamField path="RANDOM" type="keyword">
+  Shuffles the entire track list when present
+</ParamField>
+
+<ParamField path="TRACK" type="string">
+  Music track configuration
+  
+  Formats:
+  - `TRACK filename` - Single track
+  - `TRACK a;b;c` - Plays first available from list
+  - `TRACK !a;b;c` - Randomly chooses from list each time
+</ParamField>
+
+<Info>
+When a level uses `MUSIC ?n`, it references the nth track (0-indexed) from the resolved rotation list after processing `RANDOM` and `!` directives.
+</Info>
+
+---
+
+### postview.nxmi
+
+Defines custom messages shown on the results screen.
+
+```text
+$MESSAGE
+  CONDITION ALL_SAVED
+  LINE Perfect! You saved everyone!
+  LINE Incredible skill!
+$END
+
+$MESSAGE
+  CONDITION SUCCESS
+  LINE Well done! Level complete.
+$END
+
+$MESSAGE
+  CONDITION FAIL
+  LINE Oh no! Try again.
+$END
+```
+
+---
+
+### talisman.nxmi
+
+Defines optional challenge achievements for levels.
+
+```text
+$TALISMAN
+  LEVEL Fun/01_JustDig.nxlv
+  TITLE Complete in under 30 seconds
+  ID speed_run_01
+  COLOR GOLD
+  TIME_LIMIT 30
+$END
+
+$TALISMAN
+  LEVEL Fun/02_OnlyFloaters.nxlv
+  TITLE Save 100% without Climbers
+  ID no_climbers_perfect
+  COLOR SILVER
+  SAVE_REQUIREMENT 100%
+  SKILL CLIMBER 0
+$END
+```
+
+<ParamField path="LEVEL" type="string">
+  Path to the level file (relative to pack root)
+</ParamField>
+
+<ParamField path="TITLE" type="string">
+  Challenge description
+</ParamField>
+
+<ParamField path="ID" type="string">
+  Unique identifier for tracking completion
+</ParamField>
+
+<ParamField path="COLOR" type="BRONZE | SILVER | GOLD">
+  Talisman tier/difficulty
+</ParamField>
+
+Challenge conditions:
+- `TIME_LIMIT` - Maximum time allowed
+- `SAVE_REQUIREMENT` - Minimum save percentage or count
+- `SKILL <name> <count>` - Restrict specific skills
+
+---
+
+## Optional Resources
+
+### Custom Graphics
+
+<ParamField path="logo.png" type="image">
+  Pack icon shown on the title screen and level select
+  
+  Recommended size: 256×256 or smaller
+</ParamField>
+
+<ParamField path="background.png" type="image">
+  Menu background image
+  
+  Overrides default for all descendant levels unless a deeper folder provides a replacement
+</ParamField>
+
+<ParamField path="rank_graphic.png" type="image">
+  Badge/emblem shown for the rank on level select
+  
+  Placed in rank folders (e.g., `Fun/rank_graphic.png`)
+</ParamField>
+
+<ParamField path="sign_*.png" type="image">
+  Custom menu sign graphics
+  
+  Examples: `sign_play.png`, `sign_continue.png`, `sign_exit.png`
+</ParamField>
+
+<ParamField path="skill_panels.png" type="image">
+  Custom skill panel/button sprites for the in-game UI
+</ParamField>
+
+---
+
+### Music Folder
+
+<ParamField path="music/" type="directory">
+  Contains custom music tracks
+  
+  Supported formats:
+  - `.ogg` - Ogg Vorbis
+  - `.it` - Impulse Tracker
+  - `.mod` - ProTracker module
+  - `.xm` - FastTracker 2
+  - `.s3m` - ScreamTracker 3
+  - `.wav` - Waveform audio
+  
+  Tracks are referenced by filename (without extension) in level files and `music.nxmi`
+</ParamField>
+
+---
+
+### Styles Folder
+
+<ParamField path="styles/" type="directory">
+  Contains custom graphic set definitions
+  
+  Each style is a subdirectory with:
+  - `style.nxmi` - Style metadata and configuration
+  - `terrain/` - Terrain piece images
+  - `objects/` - Interactive object sprites
+  - Optional `style-hr/` - High-resolution versions
+</ParamField>
+
+<Accordion title="Example Style Structure">
+```
+styles/
+  custom_cave/
+    style.nxmi
+    terrain/
+      ground_01.png
+      ground_02.png
+      pillar_01.png
+    objects/
+      exit.png
+      entrance.png
+      trap_spikes.png
+    custom_cave-hr/        # High-res versions
+      terrain/
+        ground_01.png      # 2x resolution
+      objects/
+        exit.png
+```
+</Accordion>
+
+---
+
+### Sprites Folder
+
+<ParamField path="sprites/" type="directory">
+  Custom lemming sprite sheets and animation definitions
+  
+  - `scheme.nxmi` - Sprite mapping configuration
+  - Individual sprite sheet images (e.g., `lemming_walk.png`)
+</ParamField>
+
+---
+
+### Replays Folder
+
+<ParamField path="replays/" type="directory">
+  Saved replay files (`.nxrp` format)
+  
+  Contains recorded solutions or demonstrations for levels
+</ParamField>
+
+---
+
+## Archive Format (.nxp)
+
+The `.nxp` format is a simple archive with a file table header:
+
+<ParamField path="Header" type="binary">
+  - `uint32` - File count (little-endian)
+  - For each file:
+    - `char[28]` - Filename (null-terminated)
+    - `uint32` - File offset in archive
+    - `uint32` - File size in bytes
+</ParamField>
+
+<ParamField path="Payload" type="binary">
+  Raw file data concatenated sequentially at specified offsets
+</ParamField>
+
+<Info>
+Use **NXPConvert** (official NeoLemmix tool) to convert between `.nxp` archives and directory packs.
+</Info>
+
+---
+
+## Pack Loading
+
+The engine reads pack metadata in this order:
+
+1. Load `info.nxmi` for pack metadata
+2. Parse root `levels.nxmi` to discover ranks/groups
+3. For each group, read the rank folder's `levels.nxmi`
+4. Load individual `.nxlv` files as referenced
+5. Apply `music.nxmi` and `postview.nxmi` settings
+6. Load custom graphics/styles if present
+
+<Note>
+Optional folders (`music/`, `styles/`, `sprites/`, `replays/`, `files/`) can be omitted if not needed. The pack will still function with just the core structure.
+</Note>
+
+---
+
+## LemmingsJS-MIDI Support
+
+The LemmingsJS-MIDI implementation currently supports:
+
+- ✅ Pack metadata (`info.nxmi`)
+- ✅ Rank hierarchy (`levels.nxmi`)
+- ✅ Level files (`.nxlv` and classic `.lvl`)
+- ✅ Custom music (`music.nxmi` + `music/` folder)
+- ✅ Custom styles (via style registry)
+- ⚠️ Partial: Graphics overrides (logo, backgrounds)
+- ❌ Not yet: Talismans, replays, custom sprites
+
+<Warning>
+Currently, the classic asset format (`.DAT` files) is used. Full NeoLemmix graphic set support is planned for future releases.
+</Warning>

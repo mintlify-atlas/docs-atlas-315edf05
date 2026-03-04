@@ -1,0 +1,484 @@
+---
+title: MCP Quick Start
+description: Your first automation with the LemmingsJS-MIDI MCP server
+---
+
+This guide walks through a simple automation example to get familiar with the MCP server's core workflows.
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+1. [Installed and configured](/mcp/setup) the MCP server
+2. The game server running (`npm run start-https`)
+3. An AI client connected (Codex CLI, Claude Desktop, etc.)
+
+## Basic Workflow
+
+Every MCP automation follows this pattern:
+
+<Steps>
+  <Step title="Create a session">
+    Launch a Playwright browser and load the game
+  </Step>
+  <Step title="Inspect state">
+    Query game state to understand the situation
+  </Step>
+  <Step title="Take actions">
+    Apply skills, control timing, or edit the level
+  </Step>
+  <Step title="Close session">
+    Clean up resources when done
+  </Step>
+</Steps>
+
+## Example 1: Create Session and Get State
+
+Let's start by creating a session and fetching the initial game state.
+
+### Create a Session
+
+Call the `session_create` tool with minimal configuration:
+
+```json
+{
+  "headless": true,
+  "events": { "mode": "minimal" }
+}
+```
+
+<Note>
+  Setting `headless: true` runs the browser without a visible window. Set to `false` if you want to watch the game.
+</Note>
+
+The response includes:
+
+```json
+{
+  "ok": true,
+  "sessionId": "abc123def456",
+  "gameUrl": "https://localhost:8080/?e2e=1",
+  "spectatorUrl": null,
+  "keybindings": {
+    "version": 1,
+    "actions": ["pause", "resume", "togglePause", "selectSkillBuilder", ...]
+  },
+  "protocol": {
+    "skillNames": ["climber", "floater", "bomber", "blocker", "builder", "basher", "miner", "digger"],
+    "lemmingDeltaFields": ["x", "y", "lookRight", "frameIndex", "state", ...]
+  }
+}
+```
+
+Save the `sessionId` - you'll need it for all subsequent tool calls.
+
+### Get the Game State
+
+Call `state_get` with the session ID:
+
+```json
+{
+  "sessionId": "abc123def456",
+  "preset": "compact",
+  "lemmings": {
+    "mode": "summary",
+    "topK": 5,
+    "includeSelected": true
+  }
+}
+```
+
+This returns a compact state snapshot:
+
+```json
+{
+  "ok": true,
+  "version": "0.0.4",
+  "mode": "game",
+  "ready": true,
+  "game": {
+    "state": "running",
+    "timer": {
+      "tickIndex": 342,
+      "running": true,
+      "speedFactor": 1
+    },
+    "victory": {
+      "leftCount": 80,
+      "outCount": 0,
+      "survivorCount": 0,
+      "releaseRate": 50,
+      "minReleaseRate": 50,
+      "isFinalize": false
+    },
+    "level": {
+      "name": "Just dig!",
+      "width": 1600,
+      "height": 160,
+      "releaseCount": 80,
+      "needCount": 80,
+      "timeLimit": 300,
+      "isSuperLemming": false
+    },
+    "skills": {
+      "selectedSkill": null,
+      "selectedSkillName": null,
+      "cheatMode": false,
+      "counts": [0, 0, 0, 0, 10, 10, 0, 10],
+      "availableMask": 208
+    },
+    "lemmingManager": {
+      "selectedIndex": -1,
+      "activeCount": 80,
+      "totalCount": 80,
+      "spawnTotal": 80,
+      "releaseTickIndex": 5,
+      "nukeTargets": 0
+    },
+    "lemmingsSummary": {
+      "tickIndex": 342,
+      "selectedLemmingId": null,
+      "totalCount": 80,
+      "activeCount": 80,
+      "removedCount": 0,
+      "disabledCount": 0,
+      "byActionType": { "0": 78, "1": 2 },
+      "byState": { "2": 78, "3": 2 },
+      "climbers": 0,
+      "floaters": 0,
+      "countingDown": 0,
+      "exploded": 0,
+      "selected": null,
+      "top": [
+        { "id": 79, "x": 1512, "y": 44, "state": 2, "actionType": 0 },
+        { "id": 78, "x": 1496, "y": 44, "state": 2, "actionType": 0 },
+        { "id": 77, "x": 1480, "y": 44, "state": 2, "actionType": 0 },
+        { "id": 76, "x": 1464, "y": 44, "state": 2, "actionType": 0 },
+        { "id": 75, "x": 1448, "y": 44, "state": 2, "actionType": 0 }
+      ]
+    }
+  }
+}
+```
+
+<Note>
+  The `lemmingsSummary` mode returns aggregated stats plus the top K lemmings by priority (rightmost, countdown active, etc.). This is ideal for deciding which lemming to act on.
+</Note>
+
+## Example 2: Apply a Skill
+
+Let's select a lemming and make it dig.
+
+### Select a Lemming
+
+Pick the rightmost lemming from the summary (ID 79):
+
+```json
+{
+  "sessionId": "abc123def456",
+  "lemmingId": 79,
+  "alsoCenterView": false,
+  "confirm": true
+}
+```
+
+Call `lemming_select` with these parameters. The response confirms the selection:
+
+```json
+{
+  "ok": true,
+  "lemmingId": 79,
+  "tickIndex": 345
+}
+```
+
+### Apply the Digger Skill
+
+Now apply the digger skill to the selected lemming:
+
+```json
+{
+  "sessionId": "abc123def456",
+  "skill": "digger",
+  "lemmingId": 79,
+  "requireAvailable": true,
+  "verify": true
+}
+```
+
+<Tabs>
+  <Tab title="Parameters">
+    - `skill` - One of: `climber`, `floater`, `bomber`, `blocker`, `builder`, `basher`, `miner`, `digger`
+    - `lemmingId` - Optional; uses selected lemming if omitted
+    - `requireAvailable` - Fails if skill count is 0 (when not in cheat mode)
+    - `verify` - Checks that the lemming's `actionType` changed after applying the skill
+  </Tab>
+  <Tab title="Response">
+    ```json
+    {
+      "ok": true,
+      "skill": "digger",
+      "lemmingId": 79,
+      "tickIndexBefore": 345,
+      "tickIndexAfter": 346,
+      "actionTypeBefore": 0,
+      "actionTypeAfter": 8,
+      "changed": true,
+      "skillCountBefore": 10,
+      "skillCountAfter": 9
+    }
+    ```
+
+    The lemming's `actionType` changed from 0 (walker) to 8 (digger), and the skill count decreased from 10 to 9.
+  </Tab>
+</Tabs>
+
+## Example 3: Pause, Step, and Resume
+
+The MCP server provides precise timing control for debugging or frame-by-frame inspection.
+
+### Pause the Timer
+
+```json
+{
+  "sessionId": "abc123def456"
+}
+```
+
+Call `time_pause`. The game timer stops advancing.
+
+### Step Forward 5 Ticks
+
+```json
+{
+  "sessionId": "abc123def456",
+  "count": 5,
+  "ensurePaused": true
+}
+```
+
+Call `time_step`. This advances the game by exactly 5 ticks while keeping the timer paused.
+
+<Note>
+  Negative `count` values step **backward** in time. The game engine fully supports reverse playback.
+</Note>
+
+### Resume the Timer
+
+```json
+{
+  "sessionId": "abc123def456"
+}
+```
+
+Call `time_resume`. The game resumes normal playback.
+
+## Example 4: Vision Capture
+
+Take a screenshot for visual analysis or debugging.
+
+### Capture the Game Canvas
+
+```json
+{
+  "sessionId": "abc123def456",
+  "target": "gameCanvas",
+  "format": "png",
+  "delivery": "resource",
+  "tag": "after-digger-applied"
+}
+```
+
+Call `vision_capture`. The response includes a resource URI:
+
+```json
+{
+  "ok": true,
+  "frame": {
+    "id": "xyz789abc012",
+    "mimeType": "image/png",
+    "width": 800,
+    "height": 400,
+    "tickIndex": 346,
+    "takenAt": "2026-03-04T12:34:56.789Z",
+    "target": "gameCanvas",
+    "tag": "after-digger-applied",
+    "resourceUri": "lemmings://sessions/abc123def456/resources/xyz789abc012",
+    "sizeBytes": 123456,
+    "expiresAt": "2026-03-04T12:44:56.789Z"
+  }
+}
+```
+
+<Tabs>
+  <Tab title="Target Options">
+    - `page` - Full browser viewport
+    - `gameCanvas` - Just the game rendering area
+    - `guiCanvas` - Just the GUI panel
+    - `stageCanvas` - Combined game + GUI canvas
+    - `rect` - Custom rectangle (requires `rect` parameter)
+  </Tab>
+  <Tab title="Delivery Options">
+    - `resource` - Returns a URI; image stored in resource store
+    - `inline` - Returns base64-encoded image in `dataBase64` field
+  </Tab>
+</Tabs>
+
+### Read the Resource
+
+Most MCP clients support `resources/read` to fetch the image bytes using the URI. The image can then be passed to vision-capable AI models.
+
+## Example 5: Close the Session
+
+When you're done, clean up:
+
+```json
+{
+  "sessionId": "abc123def456"
+}
+```
+
+Call `session_close`. This:
+
+- Closes the Playwright browser
+- Clears all resources from the resource store
+- Removes the session from memory
+
+## Full Example Script
+
+Here's a complete workflow using the MCP tools:
+
+<CodeGroup>
+```json Session Create
+{
+  "headless": true,
+  "events": { "mode": "minimal" }
+}
+```
+
+```json State Get
+{
+  "sessionId": "<your-session-id>",
+  "preset": "compact",
+  "lemmings": {
+    "mode": "summary",
+    "topK": 8,
+    "includeSelected": true
+  }
+}
+```
+
+```json Lemming Select
+{
+  "sessionId": "<your-session-id>",
+  "lemmingId": 79,
+  "confirm": true
+}
+```
+
+```json Skill Apply
+{
+  "sessionId": "<your-session-id>",
+  "skill": "digger",
+  "lemmingId": 79,
+  "requireAvailable": true,
+  "verify": true
+}
+```
+
+```json Vision Capture
+{
+  "sessionId": "<your-session-id>",
+  "target": "gameCanvas",
+  "format": "png",
+  "delivery": "resource"
+}
+```
+
+```json Session Close
+{
+  "sessionId": "<your-session-id>"
+}
+```
+</CodeGroup>
+
+## Tips for Effective Automation
+
+### Use Delta Tracking for Fast Loops
+
+Instead of calling `state_get` repeatedly, use `state_delta` to fetch only what changed:
+
+```json
+{
+  "sessionId": "abc123def456",
+  "lemmings": {
+    "includeXY": "none",
+    "fields": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+  }
+}
+```
+
+This returns deltas since the last `state_get` call, excluding X/Y coordinates to reduce noise.
+
+### Semantic Verification
+
+Always use `verify: true` when applying skills to confirm the action succeeded:
+
+```json
+{
+  "skill": "builder",
+  "lemmingId": 42,
+  "verify": true
+}
+```
+
+If the lemming's `actionType` doesn't change, the tool returns `changed: false` and you can retry or adjust your strategy.
+
+### Pruned Lemming Fields
+
+The compact preset automatically prunes fields based on context:
+
+- `canClimb` only included if climber skill is available or any lemming has it
+- `hasParachute` only included if floater skill is available or any lemming has it
+- `countdown` only included if bomber skill is available
+
+This keeps payloads small while preserving relevant information.
+
+### Event Attachments
+
+Most tool responses automatically include an `events` field with recent activity:
+
+```json
+{
+  "ok": true,
+  "tickIndex": 350,
+  "events": {
+    "cursor": "12",
+    "humanSummary": "action:togglePause x1; capture:xyz789",
+    "events": [
+      {
+        "source": "agent",
+        "type": "input",
+        "tickIndex": 345,
+        "summary": "action:togglePause x1"
+      },
+      {
+        "source": "agent",
+        "type": "capture",
+        "tickIndex": 346,
+        "summary": "captureSequence:xyz789",
+        "resourceUris": ["lemmings://sessions/.../resources/..."]
+      }
+    ]
+  }
+}
+```
+
+Use the `humanSummary` field for quick context about what happened since the last call.
+
+## Next Steps
+
+- Explore [all available tools](/mcp/tools/session)
+- Learn about [state inspection strategies](/mcp/tools/state-inspection)
+- Try [editor operations](/mcp/tools/editor) to create custom levels
+- Set up [watches](/mcp/tools/watch) for automated monitoring

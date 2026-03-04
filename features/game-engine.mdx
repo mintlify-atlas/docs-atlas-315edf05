@@ -1,0 +1,224 @@
+---
+title: 'Game Engine'
+description: 'High-performance Lemmings engine with time travel, massive scalability, and accurate physics'
+---
+
+## Overview
+
+LemmingsJS-MIDI features an accurate, high-performance JavaScript port of the Lemmings engine capable of handling extreme lemming counts and running at speeds far beyond the original game.
+
+<CardGroup cols={2}>
+  <Card title="25M+ Lemmings" icon="users">
+    Engine supports over 25 million simultaneous lemmings
+  </Card>
+  <Card title="60x Speed" icon="gauge-high">
+    Runs at >60x original game speed with 450,000 lemmings
+  </Card>
+  <Card title="Time Travel" icon="clock-rotate-left">
+    Runs backwards at full speed with tick-by-tick stepping
+  </Card>
+  <Card title="99.51% Coverage" icon="shield-check">
+    Comprehensive test coverage ensures accuracy
+  </Card>
+</CardGroup>
+
+## Performance Capabilities
+
+### Speed Control
+
+The engine provides granular speed control for both normal and accelerated gameplay:
+
+- **Base speed:** 60ms per game tick (original Lemmings timing)
+- **Speed factor:** Adjustable from 0.1x to 120x in debug mode
+- **Dynamic adjustment:** Speed divisor formula: `60ms / gameSpeed`
+- **Keyboard controls:** `-` / `=` to decrease/increase (Shift for faster steps)
+- **Visual display:** Speed shown on Paws (Pause) button
+
+<Info>
+Click left/right side of the bottom bar on Paws to slow down or speed up. Right-click Paws to reset speed to 1x.
+</Info>
+
+### Benchmark Modes
+
+Multiple benchmark modes are available for performance testing:
+
+<Tabs>
+  <Tab title="bench">
+    Spawns extra entrances and adjusts speed to hold a steady tick cadence. Useful for checking raw lemming throughput in a single level.
+  </Tab>
+  <Tab title="bench2">
+    Catchup-focused mode that slows down when RAF falls behind. Good for spotting performance spikes that trigger the failsafe in `GameTimer`.
+  </Tab>
+  <Tab title="benchSequence">
+    Runs a sequence of entrance counts and extra lemming loads. Default for broader performance sweeps.
+  </Tab>
+  <Tab title="benchReverse">
+    Bench mode with reverse playback. Useful for time-travel rendering costs and reverse history application.
+  </Tab>
+</Tabs>
+
+**Running benchmarks:**
+```bash
+npm run bench-performance -- --mode=sequence
+```
+
+### Performance Metrics
+
+The E2E harness exposes live performance data through `window.__E2E__.getBenchMetrics()` for real-time monitoring during tests and benchmarks.
+
+**History stress testing:**
+```bash
+npm run bench-history -- --target=60000 --duration=60000
+```
+
+## Lemmings Physics
+
+### Accurate Game Mechanics
+
+The engine faithfully reproduces the original Lemmings physics and behaviors:
+
+- **8 Core Skills:** Climber, Floater, Bomber, Blocker, Builder, Basher, Miner, Digger
+- **State machine:** Each lemming maintains state, action type, and frame index
+- **Collision detection:** Accurate terrain interaction and steel area detection
+- **Trigger system:** Entrances, exits, traps, and interactive objects
+- **Steel accuracy:** Enhanced steel terrain detection using `js/steelSprites.json`
+
+### Lemming Data Structure
+
+Each lemming tracks:
+- Position (`x`, `y`)
+- Direction (`lookRight`)
+- Animation (`frameIndex`)
+- State and action type
+- Abilities (`canClimb`, `hasParachute`)
+- Status flags (`removed`, `disabled`, `countdown`, `hasExploded`)
+
+## Time Travel Features
+
+### Reverse Playback
+
+The engine supports full reverse playback at normal speeds:
+
+- **Continuous reverse:** Press `B` to toggle continuous reverse playback
+- **Single tick stepping:** Use `[` to step backward one tick while paused
+- **Full state restoration:** All lemming positions, states, and terrain are perfectly restored
+- **History buffer:** Maintains complete game state history for time travel
+
+<Warning>
+Reverse playback maintains a complete history buffer. For extremely long sessions with many lemmings, this may consume significant memory.
+</Warning>
+
+### Tick-by-Tick Stepping
+
+Precise frame-by-frame control for debugging and analysis:
+
+- `Space`: Pause/resume
+- `]`: Step forward one tick while paused
+- `[`: Step backward one tick while paused
+- `Alt+]`: Step backward (mirror of step forward)
+
+## Game Features
+
+### Enhanced Controls
+
+**Release Rate:**
+- `1` / `Shift+1`: Decrease by 1 / to minimum
+- `2` / `Shift+2`: Increase by 1 / to maximum
+- Right-click release rate buttons for instant min or max
+
+**Skill Selection:**
+- `3, 4, 5, 6`: Climber, Floater, Bomber, Blocker
+- `Q, W, E, R`: Builder, Basher, Miner, Digger
+- `K`: Apply selected skill to selected lemming
+- `Tab` / `Shift+Tab`: Cycle through skills
+
+**Level Controls:**
+- `Backspace`: Restart level
+- `,` / `.`: Previous / next level
+- `Shift+,` / `Shift+.`: Previous / next group
+- `T` / `Shift+T`: Nuke / instant nuke
+
+### Viewport Controls
+
+- **Arrow keys:** Pan viewport (Shift for faster)
+- **`Z` / `X`:** Zoom in / out (Shift for faster)
+- **`V`:** Reset zoom to 2x
+- **Minimap:** Click and drag to reposition view
+
+### Minimap
+
+Enhanced minimap features:
+- Accumulates ground at full resolution
+- Shows entrances, exits, lemmings, and deaths
+- Interactive click-and-drag viewport repositioning
+
+## URL Parameters
+
+Extensive configuration through URL parameters:
+
+<Tabs>
+  <Tab title="Game Settings">
+    - `version (v)`: 1-6 for different level packs (Lemmings, Oh No! More Lemmings, Xmas variants, Holiday editions)
+    - `difficulty (d)`: 1-6 difficulty level
+    - `level (l)`: 1-100 level index
+    - `speed (s)`: 0-100 initial speed factor
+  </Tab>
+  <Tab title="Debug & Bench">
+    - `debug (dbg)`: Enable debug mode
+    - `bench (b)`: Benchmark mode
+    - `benchSequence`: Run benchmark sequence
+    - `benchReverse`: Reverse playback benchmark
+    - `performanceAPI (pa)`: Enable Performance API instrumentation
+  </Tab>
+  <Tab title="Gameplay">
+    - `cheat (c)`: Enable cheat mode
+    - `endless (e)`: Disable time limit and win/loss conditions
+    - `extra (ex)`: Extra lemmings per spawn (1-1000)
+    - `scale (sc)`: Starting zoom level (0.0125-8)
+  </Tab>
+</Tabs>
+
+## Debug Mode
+
+Activate debug mode to access advanced visualization and controls:
+
+**Activation:**
+- Right-click Nuke button
+- Press `\` key
+- Add `?debug=true` to URL
+
+**Debug Visualization:**
+- Blue pixel under lemmings (engine position)
+- Red rectangles for triggers (traps, blockers, exit)
+- Cyan rectangles show steel areas
+- Orange and green show left/right arrow triggers
+
+**Extended Speed Range:**
+- Speed can drop below 1 in 0.1 steps
+- Speed can rise to 120 in steps of 10
+
+## Testing
+
+Comprehensive test coverage ensures engine accuracy:
+
+```bash
+# Full test suite
+npm test
+
+# Editor tests
+npm run test-editor
+
+# 100% editor coverage
+npm run coverage-editor
+
+# ESLint checks
+npm run lint
+```
+
+## Keybindings
+
+<Note>
+Keybindings are fully configurable in `keybindings.json`. Press `F1` or `Shift+/` in-game to show the keyboard shortcuts overlay.
+</Note>
+
+The keybindings system supports custom mapping for all game actions, with defaults matching classic Lemmings controls enhanced with modern conveniences.

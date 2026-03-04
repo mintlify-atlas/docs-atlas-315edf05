@@ -1,0 +1,420 @@
+---
+title: 'MIDI Sequencing'
+description: 'WebMIDI integration with real-time sequencing, routing, and comprehensive input mapping'
+---
+
+## Overview
+
+LemmingsJS-MIDI features a complete WebMIDI sequencing system that generates dynamic musical output based on game events and accepts MIDI input for game control.
+
+<CardGroup cols={2}>
+  <Card title="WebMIDI Routing" icon="route">
+    Full input/output routing with channel filtering
+  </Card>
+  <Card title="Event Sequencing" icon="music">
+    Real-time MIDI generation from game events
+  </Card>
+  <Card title="Input Mapping" icon="gamepad">
+    Control gameplay via MIDI notes and CCs
+  </Card>
+  <Card title="ADSR Envelopes" icon="waveform-lines">
+    Per-event envelope control and modulation
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+### Enabling MIDI
+
+1. Open the game in your browser
+2. Click **MIDI enabled** toggle in the left control panel
+3. The toggle state persists in localStorage
+4. When disabled, WebMIDI is not enabled and the router is detached
+
+<Info>
+The MIDI system requires browser WebMIDI API support. Chrome, Edge, and Opera support WebMIDI natively.
+</Info>
+
+### I/O Configuration
+
+Configure MIDI routing in the I/O section:
+
+- **Input:** Select MIDI input device
+- **Output:** Select MIDI output device (synth or hardware)
+- **Input Channel:** Set to `Omni` (all channels) or specific channel 1-16
+- **MIDI Reset:** Send all-notes-off to clear stuck notes
+
+## Sequencing System
+
+### Base BPM and Timing
+
+**Base BPM:** Master sequencing tempo (default: 120 BPM)  
+**Current BPM:** Reflects game speed: `base BPM × gameSpeed`
+
+**Timing Display:**
+- Ticks per second
+- Ticks per beat
+- Ticks per measure
+
+### Time Signature
+
+Configurable via CC mapping:
+- **CC 80:** Beats per measure (1-12, default: 4)
+- **CC 81:** Beat unit (1, 2, 4, 8, 16, default: 4)
+
+<Note>
+There is no standard MIDI CC for time signatures. The default uses CC 80/81, but you can remap or disable them in `midi-mapping.json`.
+</Note>
+
+## Event Types
+
+### Sound Effects (SFX)
+
+Game sounds are mapped to MIDI output:
+
+- Lemming footsteps
+- Skill activation sounds
+- Trap triggers
+- Explosions
+- Level completion
+
+**SFX Configuration:**
+- **Mode:** Note, degree, or chord
+- **Key + Octave:** Root note selection
+- **Scale Degree:** For degree mode (0-6)
+- **Chords:** Triad, seventh, sixth, ninth, power, sus2, sus4, octave
+
+### Triggers
+
+Interactive elements generate MIDI events:
+
+- Entrance spawns
+- Exit reaches
+- Trap activations
+- Blocker collisions
+
+**Trigger Features:**
+- Independent arpeggiation per source
+- Arp modes: up, down, updown
+- Optional per-target velocity and duration overrides
+
+## Global Effects
+
+### Intensity and Accent
+
+<Tabs>
+  <Tab title="Intensity">
+    **Default Velocity Scaling**
+    
+    - Range: 10-127
+    - Default: 80
+    - Controls base note velocity
+    - Adjustable via CC 7 or UI slider
+  </Tab>
+  <Tab title="Accent">
+    **Density Boost**
+    
+    - Range: 0-1
+    - Default: 0.4
+    - Scales event density
+    - Adjustable via CC 11 or UI slider
+  </Tab>
+</Tabs>
+
+### Positional Modifiers
+
+Map lemming position to MIDI parameters:
+
+<CardGroup cols={2}>
+  <Card title="X to Note Offset" icon="arrow-right">
+    Map horizontal position to pitch (±12 semitones)
+  </Card>
+  <Card title="Y to Velocity" icon="arrow-down">
+    Map vertical position to note velocity (20-110)
+  </Card>
+  <Card title="Y to Timbre" icon="palette">
+    Map vertical position to CC timbre (20-110)
+  </Card>
+  <Card title="View Pan" icon="camera">
+    Camera position affects MIDI pan (±127)
+  </Card>
+</CardGroup>
+
+**Modifier Configuration:**
+- Optional operators (add, multiply, clamp)
+- Per-target min/max ranges
+- Toggle via CC or UI
+
+### Global Repeat
+
+Prevent excessive note repetition:
+
+- **Beat Window:** Time window for repeat detection (1-8 beats, default: 4)
+- **Max Count:** Maximum repeats allowed (0-32, default: 0 = disabled)
+- **Target:** Which parameter to scale (velocity, duration, etc.)
+- **Amount:** Scaling factor for repeated events
+
+## ADSR Envelopes
+
+Per-target envelope overrides:
+
+<Tabs>
+  <Tab title="Attack">
+    **Attack Time**
+    
+    - Range: 0-2 seconds
+    - Default: 1
+    - CC 24
+  </Tab>
+  <Tab title="Decay">
+    **Decay Time**
+    
+    - Range: 0-2 seconds
+    - Default: 0
+    - CC 25
+  </Tab>
+  <Tab title="Sustain">
+    **Sustain Level**
+    
+    - Range: 0-1
+    - Default: 1
+    - CC 26
+  </Tab>
+  <Tab title="Release">
+    **Release Time**
+    
+    - Range: 0-2 seconds
+    - Default: 1
+    - CC 27
+  </Tab>
+</Tabs>
+
+**ADSR Targets:**
+- **Global:** Affects all events
+- **Specific SFX:** Per-sound override
+- **Trigger:** Per-trigger override
+
+## MIDI Input Mapping
+
+### Transport Messages
+
+Standard MIDI transport controls:
+
+| Message | Action |
+|---------|--------|
+| Start (0xFA) | Restart level |
+| Stop (0xFC) | Pause game |
+| Continue (0xFB) | Resume game |
+
+### Note Mapping
+
+#### Skill Selection
+
+Skills are mapped sequentially from a base note (default: 60 / Middle C):
+
+| Offset | Skill |
+|--------|-------|
+| +0 | Climber |
+| +1 | Floater |
+| +2 | Bomber |
+| +3 | Blocker |
+| +4 | Builder |
+| +5 | Basher |
+| +6 | Miner |
+| +7 | Digger |
+
+#### Action Notes
+
+| Note | Action |
+|------|--------|
+| 36 | Pause |
+| 38 | Resume |
+| 40 | Restart |
+| 41 | Speed down |
+| 43 | Speed up |
+| 45 | Speed reset |
+| 47 | Toggle MIDI |
+| 49 | Toggle view pan |
+
+### CC Mapping
+
+Comprehensive CC control over game and MIDI parameters:
+
+<Tabs>
+  <Tab title="Game Control">
+    | CC | Parameter | Range |
+    |----|-----------|-------|
+    | 1 | Speed factor | 0.1-8 |
+    | 74 | Base BPM | 60-200 |
+  </Tab>
+  <Tab title="FX">
+    | CC | Parameter | Range |
+    |----|-----------|-------|
+    | 7 | Intensity | 10-127 |
+    | 11 | Accent | 0-1 |
+    | 22 | Repeat max | 0-32 |
+    | 23 | Repeat window | 1-8 beats |
+  </Tab>
+  <Tab title="Scale">
+    | CC | Parameter | Values |
+    |----|-----------|--------|
+    | 16 | Key root | 0-11 (C-B) |
+    | 17 | Scale name | chromatic-minor, major, minor, dorian, mixolydian, pentatonic, chromatic |
+  </Tab>
+  <Tab title="Position">
+    | CC | Parameter | Type |
+    |----|-----------|------|
+    | 18 | X to note offset | Toggle |
+    | 19 | Y to velocity | Toggle |
+    | 20 | Y to timbre | Toggle |
+    | 21 | View pan | Toggle |
+  </Tab>
+  <Tab title="Note Defaults">
+    | CC | Parameter | Values |
+    |----|-----------|--------|
+    | 28 | Chord type | triad, seventh, sixth, ninth, power, sus2, sus4, octave |
+    | 29 | Chord octave | 1-8 |
+    | 30 | Chord degree | 0-6 |
+    | 31 | Duration ticks | 1-24 |
+  </Tab>
+</Tabs>
+
+## MIDI UI
+
+### Left Panel
+
+**Controls:**
+- MIDI enabled toggle
+- Reset all (clears stored config)
+- I/O section (devices and channel)
+- Base BPM control
+- MIDI Debug (shows last input/output message)
+
+**Global FX Tab:**
+- Intensity and Accent sliders
+- Positional Modifiers configuration
+- Global Repeat settings
+
+### Right Panel
+
+**Events Tab:**
+- Configure each SFX event
+- Note/degree/chord mode selection
+- Key, octave, and scale degree settings
+
+**Triggers Tab:**
+- Map trigger events to MIDI
+- Optional arpeggiator configuration
+- Per-trigger velocity and duration
+
+**ADSR Tab:**
+- Target selection (Global, SFX, Trigger)
+- Attack, Decay, Sustain, Release sliders
+- Per-target envelope overrides
+
+## Configuration
+
+### Default Mapping
+
+Defaults are stored in `midi-mapping.json`:
+
+```json
+{
+  "input": {
+    "channel": "omni",
+    "transport": { ... },
+    "notes": { ... },
+    "cc": { ... }
+  },
+  "output": {
+    "bpmBase": 120,
+    "intensity": 80,
+    "accent": 0.4,
+    "scale": { ... },
+    "envelope": { ... }
+  }
+}
+```
+
+### Customization
+
+1. Edit `midi-mapping.json` for system defaults
+2. UI changes are stored in localStorage
+3. Use **Reset all** to clear overrides and restore defaults
+4. Mapping changes take effect on refresh
+
+<Warning>
+Manual edits to `midi-mapping.json` require a page refresh to take effect.
+</Warning>
+
+## Reverse Playback
+
+MIDI behavior during reverse playback:
+
+- **allNotesOffOnToggle:** Send all-notes-off when reverse is toggled (default: `false`)
+- Clears queued MIDI events on direction change
+- Prevents note overlap during time travel
+
+## Persistence
+
+UI state persistence:
+
+- **Storage:** localStorage
+- **Defaults:** `midi-mapping.json` (applied only on first run or missing values)
+- **Reset:** Use "Reset all" to clear stored state
+- **Per-setting:** Each control value is stored independently
+
+## Advanced Features
+
+### Chord Modes
+
+Supported chord types:
+
+- **Triad:** Root, third, fifth
+- **Seventh:** Root, third, fifth, seventh
+- **Sixth:** Root, third, fifth, sixth
+- **Ninth:** Root, third, fifth, seventh, ninth
+- **Power:** Root, fifth, octave
+- **Sus2:** Root, second, fifth
+- **Sus4:** Root, fourth, fifth
+- **Octave:** Root + octave
+
+### Arpeggiator
+
+Per-trigger arpeggiation:
+
+- **Up:** Ascending through chord notes
+- **Down:** Descending through chord notes
+- **UpDown:** Ping-pong pattern
+- **Independent:** Each trigger source can run separate arps
+
+### Debug Display
+
+MIDI Debug section shows:
+- Last MIDI input message (type, channel, data)
+- Last MIDI output message (type, channel, data)
+- Real-time message monitoring
+
+## Target Ranges
+
+Default parameter ranges for positional modifiers:
+
+| Target | Range | Source |
+|--------|-------|--------|
+| Note offset | -12 to +12 | `position.xNoteRange` |
+| Intensity | 20 to 110 | `velocityRange` |
+| Timbre | 20 to 110 | `position.timbreRange` |
+| Pan | -127 to +127 | `position.panRange` |
+| Duration | 2 to 24 ticks | `durationTicks` |
+| Pitch bend | -1 to +1 | Standard |
+
+## Resources
+
+**Documentation:**
+- Full mapping reference: `docs/midi-mapping.md`
+- UI guide: `docs/midi-ui.md`
+- Configuration file: `midi-mapping.json`
+
+**Keybindings:**
+- Toggle MIDI: Configurable in `keybindings.json`
+- Quick toggle via mapped MIDI note (default: 47)

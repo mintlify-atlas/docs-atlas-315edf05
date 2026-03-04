@@ -1,0 +1,198 @@
+---
+title: Session Management
+description: Create and close Playwright browser sessions for controlling the game
+---
+
+## session.create
+
+Launch a Playwright session and load the game with the E2E harness.
+
+### Parameters
+
+<ParamField path="baseUrl" type="string" optional>
+  Base URL for the game. Defaults to `https://localhost:8080` or `LEMMINGS_MCP_BASE_URL` environment variable.
+</ParamField>
+
+<ParamField path="path" type="string" optional>
+  URL path with query parameters. Defaults to `/?e2e=1` or `LEMMINGS_MCP_PATH` environment variable.
+</ParamField>
+
+<ParamField path="headless" type="boolean" default="true" optional>
+  Run browser in headless mode.
+</ParamField>
+
+<ParamField path="viewport" type="object" optional>
+  Viewport configuration.
+  <ParamField path="viewport.width" type="integer" default="1280">
+    Viewport width in pixels.
+  </ParamField>
+  <ParamField path="viewport.height" type="integer" default="720">
+    Viewport height in pixels.
+  </ParamField>
+  <ParamField path="viewport.deviceScaleFactor" type="number" default="1" optional>
+    Device pixel ratio.
+  </ParamField>
+</ParamField>
+
+<ParamField path="enableSpectator" type="boolean" optional>
+  Start a spectator server for live viewing.
+</ParamField>
+
+<ParamField path="spectator" type="object" optional>
+  Spectator server configuration (only used if `enableSpectator` is true).
+  <ParamField path="spectator.port" type="integer" optional>
+    Port for spectator server. Defaults to random available port.
+  </ParamField>
+  <ParamField path="spectator.allowHumanInput" type="boolean" optional>
+    Allow human input via spectator interface.
+  </ParamField>
+  <ParamField path="spectator.openBrowser" type="boolean" optional>
+    Automatically open spectator in browser (not implemented).
+  </ParamField>
+</ParamField>
+
+<ParamField path="resources" type="object" optional>
+  Resource store configuration.
+  <ParamField path="resources.maxBytes" type="integer" default="268435456" optional>
+    Maximum bytes for resource storage (256 MB default).
+  </ParamField>
+  <ParamField path="resources.ttlMs" type="integer" default="600000" optional>
+    Time-to-live for resources in milliseconds (10 minutes default).
+  </ParamField>
+  <ParamField path="resources.maxItems" type="integer" default="5000" optional>
+    Maximum number of stored resource items.
+  </ParamField>
+</ParamField>
+
+<ParamField path="events" type="object" optional>
+  Event tracking configuration.
+  <ParamField path="events.maxEvents" type="integer" default="1000" optional>
+    Maximum events to keep in queue.
+  </ParamField>
+  <ParamField path="events.mode" type="enum<'none' | 'minimal' | 'full'>" default="minimal" optional>
+    Event verbosity mode.
+  </ParamField>
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Operation success status.
+</ResponseField>
+
+<ResponseField name="sessionId" type="string" required>
+  Unique session identifier for subsequent tool calls.
+</ResponseField>
+
+<ResponseField name="gameUrl" type="string" required>
+  Full URL where the game was loaded.
+</ResponseField>
+
+<ResponseField name="spectatorUrl" type="string | null" required>
+  URL for spectator interface if `enableSpectator` was true, otherwise null.
+</ResponseField>
+
+<ResponseField name="protocol" type="object" required>
+  Protocol metadata.
+  <ResponseField name="protocol.skillNames" type="array<string>" required>
+    Array of valid skill names: `['climber', 'floater', 'bomber', 'blocker', 'builder', 'basher', 'miner', 'digger']`
+  </ResponseField>
+  <ResponseField name="protocol.lemmingDeltaFields" type="array<string>" required>
+    Field names for lemming delta tracking: `['x', 'y', 'lookRight', 'frameIndex', 'state', 'canClimb', 'hasParachute', 'removed', 'disabled', 'countdown', 'hasExploded', 'lastTriggerType', 'actionType', 'countdownActive']`
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="keybindings" type="object" required>
+  Keybindings metadata.
+  <ResponseField name="keybindings.version" type="integer" required>
+    Keybindings schema version.
+  </ResponseField>
+  <ResponseField name="keybindings.actions" type="array<string>" required>
+    Sorted list of available action names.
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="warnings" type="array<string>" required>
+  Non-fatal warnings from session creation.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "headless": true,
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "events": {
+    "mode": "minimal"
+  }
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "sessionId": "abc123def456",
+  "gameUrl": "https://localhost:8080/?e2e=1",
+  "spectatorUrl": null,
+  "protocol": {
+    "skillNames": ["climber", "floater", "bomber", "blocker", "builder", "basher", "miner", "digger"],
+    "lemmingDeltaFields": ["x", "y", "lookRight", "frameIndex", "state", "canClimb", "hasParachute", "removed", "disabled", "countdown", "hasExploded", "lastTriggerType", "actionType", "countdownActive"]
+  },
+  "keybindings": {
+    "version": 1,
+    "actions": ["applySkillToSelected", "pause", "resume", ...]
+  },
+  "warnings": []
+}
+```
+</CodeGroup>
+
+<Note>
+  The session must be created before any other MCP tools can be used. The returned `sessionId` is required for all subsequent operations.
+</Note>
+
+---
+
+## session.close
+
+Close a Playwright session and clear all associated resources and events.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier returned from `session.create`.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Always returns `true` on successful closure.
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "sessionId": "abc123def456"
+}
+```
+
+```json Response
+{
+  "ok": true
+}
+```
+</CodeGroup>
+
+<Warning>
+  Closing a session will terminate the browser instance and delete all stored resources. Make sure to retrieve any needed data before closing.
+</Warning>

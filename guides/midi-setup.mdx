@@ -1,0 +1,364 @@
+---
+title: MIDI Setup
+description: Configure MIDI devices and WebMIDI integration
+---
+
+## Overview
+
+LemmingsJS-MIDI features comprehensive WebMIDI support for both input control and musical output sequencing. The MIDI system can map game events to notes, chords, and arpeggios while accepting MIDI input for game control.
+
+## Enabling MIDI
+
+<Steps>
+  <Step title="Open MIDI Panel">
+    Click the MIDI toggle in the left control panel. The enabled state persists in localStorage.
+  </Step>
+  
+  <Step title="Grant Browser Permissions">
+    Your browser will request permission to access MIDI devices. Accept to continue.
+  </Step>
+  
+  <Step title="Select Devices">
+    Choose input and output devices from the I/O section dropdowns.
+  </Step>
+</Steps>
+
+<Note>
+  When MIDI is disabled, WebMIDI is not enabled and the MIDI router is completely detached, reducing CPU overhead.
+</Note>
+
+## I/O Configuration
+
+The I/O section controls device selection and routing:
+
+<Accordion title="I/O Settings">
+  - **Input Device**: Select which MIDI controller sends input
+  - **Output Device**: Select which synthesizer or DAW receives output
+  - **Input Channel**: Filter input by channel (`Omni` or 1-16)
+  - **MIDI Reset**: Send all-notes-off and reset controllers
+</Accordion>
+
+### Input Channel
+
+Defaults to `Omni` (accept all channels). Set to a specific channel (1-16) to filter:
+
+```json midi-mapping.json
+"input": {
+  "enabled": true,
+  "channel": "omni"
+}
+```
+
+## Timing and BPM
+
+### Base BPM
+
+The base BPM is the sequencing anchor tempo (default: 120). The current BPM display shows:
+
+```
+Current BPM = Base BPM × Game Speed
+```
+
+The UI also displays:
+- **Ticks per second** (game engine ticks)
+- **Ticks per beat** (musical timing)
+- **Ticks per measure** (based on time signature)
+
+### Time Signature
+
+Configure via MIDI CC or `midi-mapping.json`:
+
+```json
+"timing": {
+  "bpmBase": 120,
+  "timeSignature": { "beats": 4, "unit": 4 }
+}
+```
+
+## Global Effects
+
+The Global FX tab provides master controls for all MIDI output:
+
+<Tabs>
+  <Tab title="Intensity & Accent">
+    ### Intensity
+    
+    Default velocity scaling (10-127, default: 80).
+    
+    All MIDI notes are scaled by this base intensity value.
+    
+    ### Accent
+    
+    Density boost factor (0-1, default: 0.4).
+    
+    Increases velocity for events that occur in rapid succession, creating dynamic emphasis.
+  </Tab>
+  
+  <Tab title="Positional Modifiers">
+    Map lemming position to MIDI parameters:
+    
+    | Modifier | Target | Range |
+    | --- | --- | --- |
+    | X to Note Offset | Pitch | -12 to +12 semitones |
+    | Y to Velocity | Volume | 20-110 |
+    | Y to Timbre | CC 74 | 20-110 |
+    
+    Each modifier supports:
+    - **Toggle**: Enable/disable
+    - **Min/Max ranges**: Constrain output
+    - **Optional operators**: Scale, invert, or offset values
+    
+    ```json
+    "position": {
+      "xToNote": false,
+      "xNoteRange": { "min": -12, "max": 12 },
+      "yToVelocity": true,
+      "yToTimbre": true,
+      "timbreRange": { "min": 20, "max": 110 }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Global Repeat">
+    Apply scaling to repeated events:
+    
+    - **Max Count**: Maximum repeats before scaling (0-32)
+    - **Window (beats)**: Time window for repeat detection (1-8)
+    - **Target**: Which parameter to scale (`velocity`, `duration`, etc.)
+    - **Amount**: Scaling factor per repeat (0-1)
+    
+    ```json
+    "repeat": {
+      "enabled": false,
+      "maxRepeats": 0,
+      "windowBeats": 4,
+      "target": "velocity",
+      "amount": 0.15
+    }
+    ```
+    
+    Useful for creating dynamic variation in repetitive game events.
+  </Tab>
+</Tabs>
+
+## Event Configuration
+
+The Events tab maps game sound effects to MIDI output:
+
+<Steps>
+  <Step title="Select an Event">
+    Choose from 23 game events:
+    - Skill selection/assignment
+    - Entrance open, level start
+    - Traps, explosions, drowning
+    - Builder/basher/miner/digger actions
+    - Exit, splat, steel hit
+  </Step>
+  
+  <Step title="Choose Mode">
+    - **Note**: Fixed MIDI note
+    - **Degree**: Scale degree (respects key/scale)
+    - **Chord**: Triad, seventh, sixth, ninth, power, sus2, sus4, octave
+  </Step>
+  
+  <Step title="Set Octave and Note">
+    Configure the base octave (1-8) and note/degree (0-11/0-6).
+  </Step>
+  
+  <Step title="Duration">
+    Set note duration in ticks (1-24, default: 6).
+  </Step>
+</Steps>
+
+### SFX Event List
+
+<Accordion title="Complete SFX List">
+  | ID | Name | Default Note | Duration |
+  | --- | --- | --- | --- |
+  | 1 | skill-select | 60 (C4) | 4 |
+  | 2 | entrance-open | 62 (D4) | 6 |
+  | 3 | level-start | 48 (C3) | 8 |
+  | 4 | skill-assign | 64 (E4) | 4 |
+  | 5 | oh-no | 55 (G3) | 8 |
+  | 6 | trap-zap | 66 (F#4) | 6 |
+  | 7 | trap-squish | 68 (G#4) | 6 |
+  | 8 | splat | 52 (E3) | 6 |
+  | 9 | trap-slicer | 70 (A#4) | 6 |
+  | 10 | steel-hit | 71 (B4) | 3 |
+  | 12 | explosion | 36 (C2) | 10 |
+  | 13 | trap-fire | 58 (A#3) | 8 |
+  | 14 | trap-ten-ton | 40 (E2) | 8 |
+  | 15 | trap-bear | 43 (G2) | 8 |
+  | 16 | exit | 76 (E5) | 6 |
+  | 17 | drown | 45 (A2) | 8 |
+  | 18 | builder-warning | 65 (F4) | 4 |
+  | 20 | builder-step | 67 (G4) | 4 |
+  | 21 | bash | 57 (A3) | 4 |
+  | 22 | dig | 59 (B3) | 4 |
+  | 23 | mine | 61 (C#4) | 4 |
+</Accordion>
+
+## Triggers Configuration
+
+The Triggers tab maps game triggers (entrance spawn, exit, traps) to MIDI:
+
+- Configure per-trigger note/degree/chord settings
+- Optional independent arpeggios per source
+- Arp modes: up, down, updown
+
+```json
+"triggers": {
+  "entrance": {
+    "mode": "degree",
+    "octave": 4,
+    "degree": 0,
+    "arp": { "enabled": true, "mode": "up" }
+  }
+}
+```
+
+## ADSR Envelopes
+
+The ADSR tab provides envelope controls:
+
+<Tabs>
+  <Tab title="Targets">
+    Apply envelopes to:
+    - **Global**: All MIDI output
+    - **Specific SFX**: Individual sound events
+    - **Triggers**: Per-trigger envelopes
+  </Tab>
+  
+  <Tab title="Parameters">
+    | Parameter | Range | Default |
+    | --- | --- | --- |
+    | Attack | 0-2 | 1 |
+    | Decay | 0-2 | 0 |
+    | Sustain | 0-1 | 1 |
+    | Release | 0-2 | 1 |
+    
+    ```json
+    "envelope": {
+      "attack": 1,
+      "decay": 0,
+      "sustain": 1,
+      "release": 1
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## MIDI Input Mapping
+
+Control the game via MIDI input:
+
+### Transport Messages
+
+| Message | Default Action |
+| --- | --- |
+| Start (0xFA) | Restart level |
+| Stop (0xFC) | Pause |
+| Continue (0xFB) | Resume |
+
+### Note Mapping
+
+<Tabs>
+  <Tab title="Skills">
+    Skills are mapped sequentially starting from note 60 (C4):
+    
+    | Note | Skill |
+    | --- | --- |
+    | 60 | Climber |
+    | 61 | Floater |
+    | 62 | Bomber |
+    | 63 | Blocker |
+    | 64 | Builder |
+    | 65 | Basher |
+    | 66 | Miner |
+    | 67 | Digger |
+    
+    Configurable via `skillBase` and `skillOrder`.
+  </Tab>
+  
+  <Tab title="Actions">
+    | Note | Action |
+    | --- | --- |
+    | 36 | Pause |
+    | 38 | Resume |
+    | 40 | Restart |
+    | 41 | Speed down |
+    | 43 | Speed up |
+    | 45 | Reset speed |
+    | 47 | Toggle MIDI |
+    | 49 | Toggle view pan |
+  </Tab>
+</Tabs>
+
+### CC Mapping
+
+Control parameters via CC messages. See the MIDI mapping section above for the complete CC reference.
+
+## MPE Support
+
+LemmingsJS-MIDI includes MPE (MIDI Polyphonic Expression) support:
+
+```json
+"mpe": {
+  "enabled": true,
+  "masterChannel": 1,
+  "memberChannels": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+  "pitchBendRange": { "semitones": 24, "cents": 0 },
+  "timbreCc": 74
+}
+```
+
+MPE enables per-note pitch bend and timbre control for expressive synthesis.
+
+## Persistence and Reset
+
+### LocalStorage
+
+All MIDI UI state is stored in localStorage. Changes persist across sessions.
+
+### Reset All
+
+Click **Reset All** in the left panel to:
+- Clear all stored configuration
+- Reset to defaults from `midi-mapping.json`
+- Reinitialize UI state
+
+### MIDI Reset
+
+Click **MIDI Reset** to send:
+- All Notes Off (CC 123)
+- Reset All Controllers (CC 121)
+
+Useful when notes get stuck or controls are out of sync.
+
+## Performance Limits
+
+The MIDI router includes safety limits to prevent overload:
+
+```json
+"limits": {
+  "maxEventsPerTick": 32,
+  "hardMaxEventsPerTick": 128,
+  "maxEventsPerSecond": 900,
+  "hardMaxEventsPerSecond": 1000,
+  "maxActiveNotes": 32,
+  "overloadCooldownMs": 500
+}
+```
+
+Priority SFX (entrance-open, level-start, exit) bypass limits when possible.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="MIDI UI Guide" icon="sliders" href="https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/midi-ui.md">
+    Detailed MIDI UI reference
+  </Card>
+  <Card title="MIDI Mapping" icon="file-code" href="https://github.com/doublemover/LemmingsJS-MIDI/blob/main/midi-mapping.json">
+    Full mapping configuration
+  </Card>
+</CardGroup>

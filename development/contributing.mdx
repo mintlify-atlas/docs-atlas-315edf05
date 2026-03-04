@@ -1,0 +1,251 @@
+---
+title: Contributing
+description: Guidelines for contributing to LemmingsJS-MIDI
+---
+
+Contributions to LemmingsJS-MIDI are welcome! Follow these guidelines to ensure consistent code quality and style.
+
+## Code Style
+
+The project uses ESLint to maintain consistent formatting:
+
+- **Indentation:** 2 spaces
+- **Strings:** Single quotes
+- **Semicolons:** Required
+
+### Formatting Commands
+
+<CodeGroup>
+
+```bash Check Formatting
+npm run lint
+```
+
+```bash Auto-Fix Style
+npm run format
+```
+
+```bash Check Dependencies
+npm run depcheck
+```
+
+</CodeGroup>
+
+<Note>
+Always run `npm run format` before committing to ensure consistent style across the codebase.
+</Note>
+
+## Before Committing
+
+Complete these checks before submitting changes:
+
+<Steps>
+  <Step title="Update CHANGELOG.md">
+    Add an entry for any user-visible change.
+    
+    <Info>
+    Documentation-only updates should **not** be listed in `CHANGELOG.md`.
+    </Info>
+  </Step>
+  <Step title="Format code">
+    ```bash
+    npm run format
+    ```
+  </Step>
+  <Step title="Check for undefined references">
+    ```bash
+    npm run check-undefined
+    ```
+    
+    Scans for uninitialized JavaScript references that could cause runtime errors.
+  </Step>
+  <Step title="Run tests">
+    ```bash
+    npm test
+    ```
+    
+    Ensure all tests pass before committing.
+  </Step>
+  <Step title="Check dependencies">
+    ```bash
+    npm run depcheck
+    ```
+    
+    Remove any unused dependencies from `package.json`.
+  </Step>
+</Steps>
+
+## Development Environment
+
+### Requirements
+
+- **Node.js 20+** (see `package.json` engines field)
+- Local development and offline tooling (not intended for npm distribution)
+
+### Setup
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/doublemover/LemmingsJS-MIDI
+    cd LemmingsJS-MIDI
+    ```
+  </Step>
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+  </Step>
+  <Step title="Start development server">
+    ```bash
+    npm start
+    ```
+    
+    For HTTPS (required for WebMIDI features):
+    ```bash
+    npm run start-https
+    ```
+  </Step>
+  <Step title="Open in browser">
+    Navigate to:
+    - Game: `https://localhost:8080`
+    - Editor: `https://localhost:8080/editor.html`
+  </Step>
+</Steps>
+
+## Codebase Constraints
+
+### Browser vs. Node.js
+
+<Note>
+The `js/` directory runs in the browser. Avoid Node-only modules like `fs`, `path`, or `process` in this directory.
+</Note>
+
+- **`js/`** - Browser-side code only
+- **`tools/`** - Node.js offline asset utilities
+- **`scripts/`** - Development and testing helpers
+- **`mcp/`** - Model Context Protocol server (Node.js)
+
+### Vendor Libraries
+
+External libraries live in `js/vendor/`:
+
+- **Do not modify** vendor files
+- **Do not reformat** vendor files
+- They are excluded from linting and coverage
+
+### Code Comments
+
+Keep code comments rare and focused:
+
+- Only comment when logic is non-obvious
+- Prefer self-documenting code with clear variable/function names
+- Avoid redundant comments that simply restate the code
+
+## Testing Requirements
+
+### Coverage Expectations
+
+- **Overall:** Maintain current coverage levels (99.51%+)
+- **Editor modules:** 100% coverage required (enforced by `npm run coverage-editor`)
+- All new features must include tests
+
+### Running Tests
+
+<CodeGroup>
+
+```bash All Tests
+npm test
+```
+
+```bash Core Game Logic
+npm run test-core
+```
+
+```bash Editor Tests
+npm run test-editor
+```
+
+```bash Coverage Report
+npm run coverage
+```
+
+</CodeGroup>
+
+See [Testing](/development/testing) for detailed testing documentation.
+
+## Documentation Updates
+
+### Roadmap Policy
+
+<Info>
+`docs/roadmap.md` is the sole source of truth for plans and roadmaps.
+</Info>
+
+If adding a new plan:
+
+1. Check if the work already exists in `docs/roadmap.md`
+2. Confirm items are not already implemented
+3. Absorb relevant work into `docs/roadmap.md`
+4. Remove the new plan file
+
+Prefer updating `docs/roadmap.md` over creating new plan documents.
+
+### Documentation Files
+
+Project documentation lives in:
+
+- `README.md` - Quick start and highlights
+- `CONTRIBUTING.md` - This guide
+- `CHANGELOG.md` - User-visible changes only
+- `docs/` - Detailed documentation by topic
+
+## Level Packs and Assets
+
+Level packs follow the NeoLemmix folder layout described in `docs/levelpacks.md`.
+
+Asset export and pack tooling is documented in:
+- [Offline Tools](/development/offline-tools)
+- `docs/offline-tools.md`
+- `docs/exporting-sprites.md`
+
+## Platform Compatibility
+
+- Use npm scripts for linting and tests
+- **Avoid bash-only commands** that won't work on Windows
+- Test on multiple platforms when possible
+
+## Submitting Changes
+
+1. **Fork** the repository
+2. **Create a branch** for your changes
+3. **Make your changes** following these guidelines
+4. **Run all checks** (format, lint, test, check-undefined)
+5. **Update CHANGELOG.md** for user-visible changes
+6. **Submit a pull request** with a clear description
+
+### Pull Request Description
+
+Include:
+
+- Summary of changes
+- Motivation and context
+- Screenshots for UI changes
+- Related issue numbers
+
+## Getting Help
+
+If you hit an issue:
+
+- Open an issue: https://github.com/doublemover/LemmingsJS-MIDI/issues
+- Check existing documentation in `docs/`
+- Review the README for quick start guidance
+
+## AI Agent Guidelines
+
+For AI agents working with this codebase, see `AGENTS.md` for specific instructions on:
+
+- Environment and tooling preferences
+- Test and check commands
+- Codebase constraints
+- Documentation policies

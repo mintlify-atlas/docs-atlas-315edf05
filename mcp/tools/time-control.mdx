@@ -1,0 +1,173 @@
+---
+title: Time Control
+description: Pause, resume, and step through game time
+---
+
+## time.pause
+
+Pause the game timer via the E2E harness.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Returns `true` if the pause command was executed successfully.
+</ResponseField>
+
+<ResponseField name="tickIndex" type="integer | null" required>
+  Current tick index after pausing, or null if unavailable.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "sessionId": "abc123def456"
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "tickIndex": 1247
+}
+```
+</CodeGroup>
+
+<Note>
+  Pausing the game is recommended before applying skills or making precise state observations.
+</Note>
+
+---
+
+## time.resume
+
+Resume the game timer via the E2E harness.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Returns `true` if the resume command was executed successfully.
+</ResponseField>
+
+<ResponseField name="tickIndex" type="integer | null" required>
+  Current tick index after resuming, or null if unavailable.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "sessionId": "abc123def456"
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "tickIndex": 1247
+}
+```
+</CodeGroup>
+
+---
+
+## time.step
+
+Step the game timer forward or backward by a number of ticks.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="count" type="integer" required>
+  Number of ticks to step. Use negative values to step backward (requires time travel).
+</ParamField>
+
+<ParamField path="ensurePaused" type="boolean" default="true" optional>
+  Automatically pause the game before stepping.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Returns `true` if the step command was executed successfully.
+</ResponseField>
+
+<ResponseField name="tickIndexBefore" type="integer | null" required>
+  Tick index before stepping.
+</ResponseField>
+
+<ResponseField name="tickIndexAfter" type="integer | null" required>
+  Tick index after stepping.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Forward Step Request
+{
+  "sessionId": "abc123def456",
+  "count": 5,
+  "ensurePaused": true
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "tickIndexBefore": 1247,
+  "tickIndexAfter": 1252
+}
+```
+
+```json Backward Step Request
+{
+  "sessionId": "abc123def456",
+  "count": -10
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "tickIndexBefore": 1252,
+  "tickIndexAfter": 1242
+}
+```
+</CodeGroup>
+
+<Warning>
+  Backward stepping requires time travel to be available. If history is not preserved, backward steps may fail or behave unexpectedly.
+</Warning>
+
+<Note>
+  Stepping is useful for frame-by-frame analysis or applying skills at precise moments. The default behavior pauses the game to ensure deterministic stepping.
+</Note>

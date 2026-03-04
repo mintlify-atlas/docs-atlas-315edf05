@@ -1,0 +1,228 @@
+---
+title: Quick Start
+description: Start playing LemmingsJS-MIDI in seconds
+---
+
+## Play Online
+
+The fastest way to experience LemmingsJS-MIDI is to play directly in your browser - no installation required.
+
+<Steps>
+  <Step title="Open the Game">
+    Visit [https://doublemover.github.io/LemmingsJS-MIDI/](https://doublemover.github.io/LemmingsJS-MIDI/) in any modern browser.
+    
+    The game works on Chrome, Firefox, Safari, and Edge. WebMIDI features require a Chromium-based browser.
+  </Step>
+  
+  <Step title="Choose Your Level">
+    Use the dropdown menus to select:
+    
+    - **Game Type**: Choose from Lemmings, Oh No! More Lemmings, or Holiday editions
+    - **Difficulty**: Select from 6 difficulty levels
+    - **Level**: Pick any level from 1-100 (varies by pack)
+    
+    Or use the arrow buttons to navigate between levels sequentially.
+  </Step>
+  
+  <Step title="Start Playing">
+    Click anywhere on the game canvas to begin. Use the on-screen controls or keyboard shortcuts to:
+    
+    - Select lemming skills (Climber, Floater, Bomber, etc.)
+    - Adjust the release rate
+    - Pause and resume
+    - Control game speed
+    
+    Press **F1** or **Shift+/** to view the full keyboard shortcuts overlay.
+  </Step>
+</Steps>
+
+## Essential Controls
+
+<CardGroup cols={2}>
+  <Card title="Pause/Resume" icon="pause">
+    **Space** - Pause or resume the game
+  </Card>
+  <Card title="Game Speed" icon="gauge">
+    **-** / **=** - Decrease/increase speed (Shift for faster steps)
+  </Card>
+  <Card title="Time Travel" icon="backward">
+    **[** / **]** - Step backward/forward one tick while paused
+  </Card>
+  <Card title="Reverse Playback" icon="rotate-left">
+    **B** - Toggle continuous reverse playback
+  </Card>
+</CardGroup>
+
+### Skill Selection
+
+<Tabs>
+  <Tab title="Number Keys">
+    - **3** - Climber
+    - **4** - Floater
+    - **5** - Bomber
+    - **6** - Blocker
+  </Tab>
+  <Tab title="Letter Keys">
+    - **Q** - Builder
+    - **W** - Basher
+    - **E** - Miner
+    - **R** - Digger
+  </Tab>
+  <Tab title="Application">
+    - **K** - Apply selected skill to selected lemming
+    - **Tab** / **Shift+Tab** - Cycle through skills
+  </Tab>
+</Tabs>
+
+<Info>
+  All keybindings are configurable via `keybindings.json` for local installations.
+</Info>
+
+## Camera Controls
+
+- **Arrow Keys** - Pan the viewport (Shift for faster movement)
+- **Z** / **X** - Zoom in/out (Shift for faster steps)
+- **V** - Reset zoom to 2x
+- **Minimap** - Click and drag to reposition the view
+
+## Level Navigation
+
+- **,** / **.** - Previous/next level
+- **Shift+,** / **Shift+.** - Previous/next difficulty group
+- **Backspace** - Restart current level
+
+## Using URL Parameters
+
+Customize your game experience by adding parameters to the URL:
+
+```
+https://doublemover.github.io/LemmingsJS-MIDI/?v=2&d=3&l=15&s=2
+```
+
+<CodeGroup>
+
+```url Game Version
+?version=2      # Oh no! More Lemmings
+?v=3            # Xmas 1991 (short form)
+```
+
+```url Level Selection
+?difficulty=3   # Difficulty level (1-6)
+?level=15       # Level number (1-100)
+?d=3&l=15       # Short form
+```
+
+```url Game Settings
+?speed=5        # Start at 5x speed
+?cheat=true     # Enable cheat mode (all skills)
+?endless=true   # Disable time limit and win/loss
+```
+
+```url Display
+?scale=3        # Starting zoom level (0.0125-8)
+?debug=true     # Enable debug visualizations
+```
+
+</CodeGroup>
+
+<Note>
+  Use `?shortcut=true` or `?_=true` to prefer short query keys when the game updates the URL.
+</Note>
+
+## Try the Level Editor
+
+Create your own levels with the full-featured editor:
+
+<Steps>
+  <Step title="Open the Editor">
+    Navigate to [https://doublemover.github.io/LemmingsJS-MIDI/editor.html](https://doublemover.github.io/LemmingsJS-MIDI/editor.html)
+  </Step>
+  
+  <Step title="Start Creating">
+    - Click **New Level** to start from scratch
+    - Or select an existing level from the dropdowns to modify
+    - Choose your tileset from the **Style** dropdown
+  </Step>
+  
+  <Step title="Place Elements">
+    Select tools from the left panel:
+    
+    - **Terrain** - Place ground pieces
+    - **Object** - Add traps, water, and decorations
+    - **Entrance** - Place spawn points
+    - **Exit** - Add level exits
+    - **Steel** - Draw indestructible areas
+  </Step>
+  
+  <Step title="Test and Export">
+    - Press **P** or click **Playtest** to test your level
+    - Click **Export** to save as .nxlv format
+    - Click **Export LVL** for classic .lvl compatibility
+  </Step>
+</Steps>
+
+## Enable WebMIDI (Optional)
+
+For musicians and MIDI enthusiasts:
+
+<Steps>
+  <Step title="Use a Chromium Browser">
+    WebMIDI requires Chrome, Edge, or another Chromium-based browser.
+  </Step>
+  
+  <Step title="Enable MIDI Panel">
+    Click the **MIDI** toggle in the left control panel to enable WebMIDI features.
+  </Step>
+  
+  <Step title="Connect Devices">
+    - Select your MIDI Input and Output devices from the dropdowns
+    - Configure input channel (defaults to Omni)
+    - Click **MIDI reset** if you need to reinitialize
+  </Step>
+  
+  <Step title="Customize Mapping">
+    Use the tabs to configure:
+    
+    - **Events** - Map game sounds to notes/chords
+    - **Triggers** - Route entrance/exit triggers to MIDI
+    - **Global FX** - Adjust intensity, accent, and positional modifiers
+    - **ADSR** - Configure envelopes per sound
+  </Step>
+</Steps>
+
+<Info>
+  Your MIDI configuration is saved in localStorage and persists between sessions.
+</Info>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Keyboard Shortcuts"
+    icon="keyboard"
+    href="/guides/keyboard-shortcuts"
+  >
+    Master all the keyboard controls
+  </Card>
+  <Card
+    title="MIDI Setup Guide"
+    icon="sliders"
+    href="/guides/midi-setup"
+  >
+    Deep dive into MIDI configuration
+  </Card>
+  <Card
+    title="Level Editor Guide"
+    icon="pen-ruler"
+    href="/guides/level-editing"
+  >
+    Learn advanced editor techniques
+  </Card>
+  <Card
+    title="Local Installation"
+    icon="laptop-code"
+    href="/installation"
+  >
+    Set up for offline play and development
+  </Card>
+</CardGroup>

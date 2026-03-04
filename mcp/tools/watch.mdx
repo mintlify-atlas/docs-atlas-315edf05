@@ -1,0 +1,200 @@
+---
+title: Watches
+description: Create and manage watches that emit events based on game state changes
+---
+
+## watch.create
+
+Create a watch that emits events based on tick intervals or state changes. Watches run asynchronously and add events to the session event queue.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="watch" type="object" required>
+  Watch configuration.
+  <ParamField path="watch.type" type="enum<'everyTicks' | 'onChange'>" required>
+    Watch trigger type:
+    - `everyTicks`: Trigger every N ticks
+    - `onChange`: Trigger when a JSON pointer value changes
+  </ParamField>
+  <ParamField path="watch.everyTicks" type="integer" optional>
+    Tick interval (required when type is `everyTicks`).
+  </ParamField>
+  <ParamField path="watch.jsonPointer" type="string" optional>
+    JSON pointer path to watch (required when type is `onChange`, e.g., `/game/timer/tickIndex`).
+  </ParamField>
+</ParamField>
+
+<ParamField path="actions" type="array<object>" optional>
+  Actions to perform when watch triggers.
+  <ParamField path="actions[].type" type="enum<'emitSummary' | 'capture'>" required>
+    Action type.
+  </ParamField>
+  <ParamField path="actions[].include" type="object" optional>
+    What to include in summary emission (only for `emitSummary` type).
+    <ParamField path="actions[].include.lemmingsSummary" type="boolean" optional>
+      Include lemming summary.
+    </ParamField>
+    <ParamField path="actions[].include.statePointers" type="array<string>" optional>
+      JSON pointers to include in event data.
+    </ParamField>
+  </ParamField>
+  <ParamField path="actions[].capture" type="object" optional>
+    Capture options (only for `capture` type, same as `vision.capture` without sessionId).
+  </ParamField>
+  <ParamField path="actions[].throttleTicks" type="integer" optional>
+    Minimum ticks between captures (prevents excessive capture rate).
+  </ParamField>
+</ParamField>
+
+<ParamField path="enabled" type="boolean" default="true" optional>
+  Whether the watch is initially enabled.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Always returns `true` on successful creation.
+</ResponseField>
+
+<ResponseField name="watchId" type="string" required>
+  Unique watch identifier for cancellation.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Every Ticks Watch
+{
+  "sessionId": "abc123def456",
+  "watch": {
+    "type": "everyTicks",
+    "everyTicks": 50
+  },
+  "actions": [
+    {
+      "type": "emitSummary",
+      "include": {
+        "lemmingsSummary": true,
+        "statePointers": [
+          "/game/victory/outCount",
+          "/game/victory/survivorCount"
+        ]
+      }
+    },
+    {
+      "type": "capture",
+      "capture": {
+        "target": "stageCanvas",
+        "format": "jpeg",
+        "delivery": "resource",
+        "tag": "periodic-capture"
+      },
+      "throttleTicks": 100
+    }
+  ]
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "watchId": "watch-xyz789"
+}
+```
+
+```json OnChange Watch
+{
+  "sessionId": "abc123def456",
+  "watch": {
+    "type": "onChange",
+    "jsonPointer": "/game/victory/outCount"
+  },
+  "actions": [
+    {
+      "type": "emitSummary",
+      "include": {
+        "statePointers": [
+          "/game/victory/outCount",
+          "/game/victory/survivorCount"
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "watchId": "watch-abc456"
+}
+```
+</CodeGroup>
+
+<Note>
+  Watch events appear in the session event queue with:
+  - `source`: `system`
+  - `type`: `watch-trigger` or `capture`
+  - `summary`: Includes watch ID and action type
+  - `data`: Summary data or state pointers (for `emitSummary` actions)
+  - `resourceUris`: Array of resource URIs (for `capture` actions)
+</Note>
+
+<Warning>
+  Watches run continuously in the background (every 250ms polling interval). High-frequency watches or capture actions can consume significant resources. Use `throttleTicks` to limit capture rate.
+</Warning>
+
+---
+
+## watch.cancel
+
+Cancel a watch and stop event emission.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="watchId" type="string" required>
+  Watch identifier from `watch.create`.
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Returns `true` if watch was found and cancelled, `false` if not found.
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Request
+{
+  "sessionId": "abc123def456",
+  "watchId": "watch-xyz789"
+}
+```
+
+```json Response
+{
+  "ok": true
+}
+```
+</CodeGroup>
+
+<Note>
+  When all watches are cancelled, the watch polling loop is automatically stopped to save resources.
+</Note>

@@ -1,0 +1,463 @@
+---
+title: Level Editing
+description: Complete guide to creating and editing levels in the LemmingsJS-MIDI editor
+---
+
+## Getting Started
+
+The LemmingsJS-MIDI level editor is a fully-featured tool for creating custom levels.
+
+<Steps>
+  <Step title="Open the Editor">
+    Navigate to `editor.html` in your browser or visit the [online editor](https://doublemover.github.io/LemmingsJS-MIDI/editor.html).
+  </Step>
+  
+  <Step title="Choose Your Workflow">
+    - **New Level**: Start from scratch with a blank canvas
+    - **Import Level**: Load existing `.nxlv` or classic `.lvl` files
+    - **Load Saved**: Continue working on a saved level from localStorage
+  </Step>
+  
+  <Step title="Select a Tool">
+    Pick from the tool list: Terrain, Gadget, Trigger, Entrance, Exit, Steel, Brush, or Eraser.
+  </Step>
+  
+  <Step title="Build Your Level">
+    Click or drag in the canvas to place pieces. Use the inspector to fine-tune properties.
+  </Step>
+  
+  <Step title="Test and Iterate">
+    Press `P` to toggle playtest mode and verify your level design.
+  </Step>
+</Steps>
+
+## Editor Tools
+
+<Tabs>
+  <Tab title="Basic Tools">
+    ### Select Tool (`S`)
+    
+    - **Click** to select a single entry
+    - **Shift-click** to add to selection
+    - **Drag** to move selected entries
+    - **Marquee** (click and drag in empty space) to multi-select
+    - **Handles** appear on single selections for resizing
+    
+    ### Terrain Tool (`T`)
+    
+    Place terrain pieces from the current style palette.
+    
+    - Click to place at default size
+    - Drag to position before releasing
+    - Use inspector to adjust X, Y, and flags
+    
+    ### Steel Tool (`F`)
+    
+    Define steel areas that prevent destructive skills.
+    
+    - Drag to create rectangular steel zones
+    - Resize using handles in select mode
+    - Steel data is stored separately from visual terrain
+  </Tab>
+  
+  <Tab title="Interactive Objects">
+    ### Gadget Tool (`G`)
+    
+    Place decorative or interactive objects:
+    - Traps
+    - Decorations
+    - Moving objects
+    
+    ### Trigger Tool (`R`)
+    
+    Add trigger zones for traps and interactive elements.
+    
+    ### Entrance Tool (`E`)
+    
+    Place lemming spawn points.
+    
+    <Note>
+      Every level requires at least one entrance.
+    </Note>
+    
+    ### Exit Tool (`X`)
+    
+    Place level exit points.
+    
+    <Note>
+      Every level requires at least one exit.
+    </Note>
+  </Tab>
+  
+  <Tab title="Drawing Tools">
+    ### Brush Tool (`B`)
+    
+    Freehand drawing for custom terrain.
+    
+    - Click and drag to draw
+    - Brush size configurable in inspector
+    - Useful for creating custom shapes
+    
+    ### Eraser Tool (`D`)
+    
+    Remove terrain or delete entries.
+    
+    - Click to delete individual entries
+    - Drag to erase terrain pixels
+    - Works on both placed pieces and brush strokes
+  </Tab>
+</Tabs>
+
+## Selection and Transforms
+
+### Multi-Selection
+
+<Steps>
+  <Step title="Shift-Click">
+    Hold Shift and click entries to add them to the selection.
+  </Step>
+  
+  <Step title="Marquee Selection">
+    Click and drag in empty space to create a selection rectangle.
+  </Step>
+  
+  <Step title="Select All">
+    Use `Ctrl+A` (not bound by default) or marquee the entire canvas.
+  </Step>
+</Steps>
+
+### Moving and Transforming
+
+<Accordion title="Movement">
+  - **Drag**: Click and drag selected entries to move
+  - **Arrow keys**: Nudge by 1 pixel
+  - **Shift+Arrow**: Nudge by grid size (faster)
+  - **Handles**: Drag resize handles on single selections
+</Accordion>
+
+<Accordion title="Cloning">
+  - **Alt-drag**: Hold Alt while dragging to clone entries
+  - **Duplicate** (`Ctrl+D`): Duplicate selection in place
+  - **Copy/Paste** (`Ctrl+C`, `Ctrl+V`): Standard clipboard operations
+</Accordion>
+
+<Accordion title="Alignment">
+  - **Snap to Grid** (`Ctrl+G`): Align selection to grid
+  - **Nudge**: Use arrow keys for precise positioning
+  - **Inspector**: Enter exact X/Y coordinates
+</Accordion>
+
+## Layer Management
+
+<Accordion title="Z-Order Controls">
+  | Action | Shortcut | Description |
+  | --- | --- | --- |
+  | Bring to Front | `Ctrl+Shift+]` | Move to top layer |
+  | Send to Back | `Ctrl+Shift+[` | Move to bottom layer |
+  | Move Forward | `Alt+]` | Move up one layer |
+  | Move Backward | `Alt+[` | Move down one layer |
+</Accordion>
+
+Proper layering ensures:
+- Background terrain renders first
+- Objects and traps appear on top
+- Entrances and exits are visible
+
+## The Inspector
+
+The inspector panel shows properties for the selected entry:
+
+<Tabs>
+  <Tab title="Common Properties">
+    - **X, Y**: Position coordinates
+    - **Width, Height**: Dimensions (where applicable)
+    - **Piece ID**: Sprite/piece index
+    - **Style**: Terrain style or object set
+  </Tab>
+  
+  <Tab title="Flags">
+    - **Flip Horizontal**: Mirror piece horizontally
+    - **Flip Vertical**: Mirror piece vertically
+    - **No Overwrite**: Preserve existing terrain (for terrain only)
+    - **Only on Terrain**: Restrict to existing terrain (for steel)
+  </Tab>
+  
+  <Tab title="Entry-Specific">
+    Different entry types expose unique properties:
+    
+    - **Entrance**: Direction, spawn rate
+    - **Exit**: Multiple exits allowed
+    - **Trap**: Trigger zone, animation timing
+    - **Steel**: Collision area
+  </Tab>
+</Tabs>
+
+Edit properties directly in the inspector or via keyboard shortcuts for nudging.
+
+## Palette System
+
+The palette displays available pieces for the current tool:
+
+<Steps>
+  <Step title="Automatic Generation">
+    Palette previews are generated from sprites and cached in browser storage.
+  </Step>
+  
+  <Step title="Style Selection">
+    Choose terrain style (dirt, fire, crystal, etc.) to load the corresponding palette.
+  </Step>
+  
+  <Step title="Pick a Piece">
+    Click a piece in the palette to make it active for placement.
+  </Step>
+</Steps>
+
+<Note>
+  Palette caching significantly improves load times on subsequent editor sessions.
+</Note>
+
+## Playtest Mode
+
+Test your level without leaving the editor:
+
+<Steps>
+  <Step title="Enter Playtest">
+    Press `P` to toggle playtest mode.
+  </Step>
+  
+  <Step title="Play the Level">
+    The level runs with full game functionality. Use normal game controls to play.
+  </Step>
+  
+  <Step title="Return to Editor">
+    Press `P` again to return to edit mode. Your progress is not saved.
+  </Step>
+</Steps>
+
+<Note>
+  Playtest does not validate the level. Use the Validation panel to check for errors before exporting.
+</Note>
+
+## Undo and Redo
+
+The editor supports full undo/redo:
+
+| Action | Shortcut |
+| --- | --- |
+| Undo | `Z` |
+| Redo | `Shift+Z` |
+
+Undo history includes:
+- Adding/removing entries
+- Moving/resizing
+- Property changes
+- Brush strokes
+
+## Validation
+
+The Validation panel lists issues and offers quick-fix actions:
+
+<Accordion title="Common Validation Errors">
+  - **Missing entrance**: Level has no spawn point
+  - **Missing exit**: Level has no exit
+  - **Invalid coordinates**: Entry positioned outside bounds
+  - **Overlapping steel**: Steel areas conflict
+  - **Missing required properties**: Entry missing critical data
+</Accordion>
+
+Fix all errors before exporting to ensure compatibility.
+
+## Saving and Loading
+
+<Tabs>
+  <Tab title="Save to Browser">
+    - Click **Save** to store in localStorage
+    - Saved levels appear in the **Saved** selector
+    - Persists across browser sessions
+    - Limited by browser storage quota
+  </Tab>
+  
+  <Tab title="Export">
+    Export as `.nxlv` (NeoLemmix format):
+    
+    <Steps>
+      <Step title="Click Export">
+        Open the export dialog from the editor header.
+      </Step>
+      
+      <Step title="Choose Format">
+        Select `.nxlv` for NeoLemmix-compatible files.
+      </Step>
+      
+      <Step title="Download">
+        The file downloads to your default download location.
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Import">
+    Import existing levels:
+    
+    <Steps>
+      <Step title="Click Import">
+        Open the import dialog from the editor header.
+      </Step>
+      
+      <Step title="Select File">
+        Choose a `.nxlv` or classic `.lvl` file.
+      </Step>
+      
+      <Step title="Load Level">
+        The level loads into the editor with full edit support.
+      </Step>
+    </Steps>
+    
+    <Note>
+      Classic `.lvl` files are converted to the editor's internal format.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Keyboard Shortcuts
+
+### Tools
+
+| Key | Tool |
+| --- | --- |
+| `S` | Select |
+| `T` | Terrain |
+| `G` | Gadget |
+| `R` | Trigger |
+| `E` | Entrance |
+| `X` | Exit |
+| `F` | Steel |
+| `B` | Brush |
+| `D` | Eraser |
+
+### Actions
+
+| Key | Action |
+| --- | --- |
+| `P` | Toggle playtest |
+| `F1` or `Shift+/` | Show shortcuts overlay |
+| `Z` | Undo |
+| `Shift+Z` | Redo |
+| `Ctrl+C` | Copy |
+| `Ctrl+V` | Paste |
+| `Ctrl+D` | Duplicate |
+| `Delete` or `Backspace` | Delete selection |
+
+For the complete list, see [Keyboard Shortcuts](/guides/keyboard-shortcuts).
+
+## Common Workflows
+
+### Create a New Level from Scratch
+
+<Steps>
+  <Step title="Start Fresh">
+    Open `editor.html` and start with a blank canvas.
+  </Step>
+  
+  <Step title="Set Level Metadata">
+    Use the inspector to set level title, style, and required save percentage.
+  </Step>
+  
+  <Step title="Place Terrain">
+    Select the Terrain tool and build the ground, platforms, and structures.
+  </Step>
+  
+  <Step title="Add Entrance and Exit">
+    Place at least one entrance and one exit. These are mandatory.
+  </Step>
+  
+  <Step title="Add Obstacles">
+    Place gadgets, triggers, and traps to create challenge.
+  </Step>
+  
+  <Step title="Define Steel Areas">
+    Use the Steel tool to mark indestructible zones.
+  </Step>
+  
+  <Step title="Playtest">
+    Press `P` to test gameplay and adjust difficulty.
+  </Step>
+  
+  <Step title="Validate and Export">
+    Fix any validation errors, then export as `.nxlv`.
+  </Step>
+</Steps>
+
+### Import and Modify Classic Levels
+
+<Steps>
+  <Step title="Import">
+    Click Import and select a classic `.lvl` file.
+  </Step>
+  
+  <Step title="Review Conversion">
+    Check that all pieces imported correctly. Some features may require manual adjustment.
+  </Step>
+  
+  <Step title="Make Changes">
+    Add, remove, or modify entries using the standard editor tools.
+  </Step>
+  
+  <Step title="Save or Export">
+    Save to localStorage or export as `.nxlv` for use in other tools.
+  </Step>
+</Steps>
+
+### Rapid Prototyping
+
+<Steps>
+  <Step title="Use Brush Tool">
+    Draw terrain quickly with freehand strokes.
+  </Step>
+  
+  <Step title="Alt-Drag to Clone">
+    Duplicate pieces rapidly by holding Alt while dragging.
+  </Step>
+  
+  <Step title="Test Frequently">
+    Toggle playtest often (`P`) to validate design ideas.
+  </Step>
+  
+  <Step title="Iterate">
+    Use Undo/Redo freely to experiment with different layouts.
+  </Step>
+</Steps>
+
+## Tips and Best Practices
+
+<Accordion title="Design Tips">
+  - **Start simple**: Build the critical path first, then add complexity
+  - **Test early**: Playtest frequently to catch design issues
+  - **Use steel strategically**: Guide player behavior with indestructible zones
+  - **Layer carefully**: Proper z-order prevents visual glitches
+  - **Validate often**: Fix errors incrementally rather than at the end
+</Accordion>
+
+<Accordion title="Performance Tips">
+  - **Limit terrain pieces**: Fewer pieces = faster rendering
+  - **Cache palettes**: Palette generation is automatic but benefits from caching
+  - **Save regularly**: Save to localStorage to prevent data loss
+  - **Export backups**: Keep `.nxlv` files as external backups
+</Accordion>
+
+<Accordion title="Compatibility Tips">
+  - **Use NeoLemmix format**: `.nxlv` is the modern standard
+  - **Validate before sharing**: Ensure levels pass all validation checks
+  - **Test in playtest**: Don't rely on external tools for initial testing
+  - **Document custom features**: If using advanced features, note compatibility
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/guides/keyboard-shortcuts">
+    Complete editor shortcut reference
+  </Card>
+  <Card title="Level Packs" icon="folder" href="https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/levelpacks.md">
+    Creating and organizing level packs
+  </Card>
+</CardGroup>

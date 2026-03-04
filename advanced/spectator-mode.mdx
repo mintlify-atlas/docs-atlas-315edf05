@@ -1,0 +1,385 @@
+---
+title: Spectator Mode
+description: Real-time spectator mode for watching AI agents play Lemmings
+---
+
+## Overview
+
+Spectator mode provides a real-time web interface for watching the game as it's being played by AI agents or automation scripts. It's designed for the MCP (Model Context Protocol) server but can be used with any automation tool.
+
+## Features
+
+- **Real-time frame streaming** via WebSocket
+- **Optional human interaction** - Spectators can assist or interfere
+- **Automatic capture** - Frames captured every 500ms
+- **JPEG compression** - Efficient bandwidth usage
+- **Event tracking** - Human input is recorded and reported to agents
+- **Localhost-only binding** - Secure by default
+
+## Enabling Spectator Mode
+
+### Via MCP Server
+
+When creating an MCP session, enable the spectator:
+
+```javascript
+// MCP tool: session.create
+{
+  "enableSpectator": true,
+  "spectator": {
+    "port": 8081,              // Optional: specific port (0 = auto)
+    "allowHumanInput": true,   // Optional: enable keyboard/mouse
+    "openBrowser": false       // Not yet implemented
+  }
+}
+```
+
+The response includes the spectator URL:
+
+```json
+{
+  "ok": true,
+  "sessionId": "abc123",
+  "spectatorUrl": "http://127.0.0.1:8081"
+}
+```
+
+### Accessing the Interface
+
+Open the spectator URL in any web browser:
+
+```
+http://127.0.0.1:8081
+```
+
+You'll see:
+- Live game canvas (stage view)
+- Frame updates every 500ms
+- Connection status indicator
+- Input controls (if `allowHumanInput` is enabled)
+
+<Info>
+The spectator server binds to `127.0.0.1` only and is not accessible from other machines on the network. This is a security measure to prevent unauthorized access.
+</Info>
+
+## How It Works
+
+### Server Architecture
+
+The spectator mode consists of:
+
+1. **HTTP server** - Serves the spectator HTML page
+2. **WebSocket server** - Streams frames to connected clients
+3. **Frame capture loop** - Captures game canvas every 500ms
+4. **Event relay** - Forwards human input to game session
+
+### Frame Streaming
+
+```javascript
+// Frame capture loop (server-side)
+setInterval(async () => {
+  const frame = await captureFrame(session, {
+    target: 'stageCanvas',
+    format: 'jpeg',
+    delivery: 'inline'
+  });
+  
+  const payload = {
+    type: 'frame',
+    mimeType: 'image/jpeg',
+    dataBase64: frame.dataBase64
+  };
+  
+  // Broadcast to all connected clients
+  for (const ws of clients) {
+    ws.send(JSON.stringify(payload));
+  }
+}, 500);
+```
+
+### WebSocket Protocol
+
+#### Server → Client Messages
+
+**Hello message** (on connection):
+```json
+{
+  "type": "hello",
+  "allowHumanInput": true
+}
+```
+
+**Frame update**:
+```json
+{
+  "type": "frame",
+  "mimeType": "image/jpeg",
+  "dataBase64": "base64-encoded-image-data"
+}
+```
+
+#### Client → Server Messages
+
+**Keyboard input** (if allowed):
+```json
+{
+  "type": "key",
+  "key": "Space",
+  "action": "down"  // or "up"
+}
+```
+
+**Mouse click** (if allowed):
+```json
+{
+  "type": "click",
+  "x": 0.5,    // Normalized 0-1 coordinates
+  "y": 0.3
+}
+```
+
+## Human Interaction
+
+### Keyboard Input
+
+When `allowHumanInput` is enabled:
+
+- Spectators can press keys to control the game
+- Key events are normalized (e.g., `Ctrl` → `Control`)
+- Events are sent to the game page via Playwright
+- Human actions are logged in the event queue
+
+### Mouse Input
+
+Spectators can click on the game canvas:
+
+- Click coordinates are normalized (0-1 range)
+- Server translates to absolute pixel coordinates
+- Clicks are relayed to the game via Playwright
+- Click events are tracked and reported
+
+### Event Summary
+
+Human input is tracked and summarized:
+
+```javascript
+// Agent receives summary on next MCP call
+{
+  "events": {
+    "cursor": "12345",
+    "humanSummary": "key:down:Space; click:0.50,0.30",
+    "events": [
+      {
+        "source": "human",
+        "type": "input",
+        "summary": "key:down:Space"
+      },
+      {
+        "source": "human",
+        "type": "input",
+        "summary": "click:0.50,0.30"
+      }
+    ]
+  }
+}
+```
+
+<Note>
+The agent doesn't receive events in real-time unless the MCP host supports streaming. By default, event summaries are included in the next tool response after human interaction occurs.
+</Note>
+
+## Use Cases
+
+### Watching AI Agents
+
+Primary use case - observe AI playing:
+
+- Watch Claude or other LLMs play Lemmings in real-time
+- Understand agent decision-making visually
+- Debug agent behavior
+- Demonstrate AI capabilities
+
+### Human-AI Collaboration
+
+With `allowHumanInput` enabled:
+
+- Help the AI when it gets stuck
+- Test hybrid human-AI gameplay
+- Provide hints by selecting lemmings or using skills
+- Experiment with co-pilot interactions
+
+### Research & Education
+
+Valuable for research:
+
+- Record AI gameplay sessions
+- Study agent strategies
+- Compare different AI approaches
+- Create educational demonstrations
+
+### Testing & QA
+
+Useful during development:
+
+- Verify automation scripts work correctly
+- Visual confirmation of MCP commands
+- Debug frame capture and rendering
+- Monitor long-running test sessions
+
+## Configuration Options
+
+### Port Selection
+
+```javascript
+{
+  "spectator": {
+    "port": 8081  // Specific port
+  }
+}
+```
+
+or
+
+```javascript
+{
+  "spectator": {
+    "port": 0  // Auto-assign available port
+  }
+}
+```
+
+When using `port: 0`, the server will assign an available port automatically. The actual port is returned in the `spectatorUrl`.
+
+### Human Input Control
+
+```javascript
+{
+  "spectator": {
+    "allowHumanInput": true   // Enable keyboard/mouse
+  }
+}
+```
+
+Set to `false` for view-only mode (default).
+
+## Security Considerations
+
+### Localhost Binding
+
+The spectator server binds to `127.0.0.1` only:
+
+- Not accessible from other machines
+- No external network exposure
+- Requires local browser access
+
+### Human Input Opt-In
+
+- Human interaction is disabled by default
+- Must explicitly enable `allowHumanInput: true`
+- Prevents unauthorized game control
+
+### Session Isolation
+
+Each MCP session has its own spectator server:
+
+- No cross-session data leakage
+- Independent event queues
+- Isolated WebSocket connections
+
+<Warning>
+If you expose the spectator server beyond localhost (via reverse proxy, etc.), ensure you add appropriate authentication and authorization. The server has no built-in auth mechanism.
+</Warning>
+
+## Technical Details
+
+### Frame Capture
+
+Captures are taken from the stage canvas:
+
+```javascript
+{
+  target: 'stageCanvas',     // Combined game + GUI view
+  format: 'jpeg',            // Smaller than PNG
+  delivery: 'inline'         // Base64 in response
+}
+```
+
+### Frame Interval
+
+Fixed at 500ms (2 FPS):
+
+- Balance between bandwidth and responsiveness
+- Sufficient for observing gameplay
+- Low server overhead
+- Future versions may make this configurable
+
+### Connection Management
+
+```javascript
+// Multiple clients can connect
+const clients = new Set();
+
+wss.on('connection', (ws) => {
+  clients.add(ws);
+  
+  // Send latest frame immediately
+  if (session.spectator?.lastFrame) {
+    ws.send(JSON.stringify(session.spectator.lastFrame));
+  }
+  
+  ws.on('close', () => {
+    clients.delete(ws);
+  });
+});
+```
+
+### Resource Cleanup
+
+When the session closes:
+
+```javascript
+// Automatically cleaned up
+- Frame capture interval cleared
+- WebSocket connections closed
+- HTTP server stopped
+- Session spectator object nulled
+```
+
+## Troubleshooting
+
+### No Frames Appearing
+
+- Check that the game has loaded (`ready === true`)
+- Verify WebSocket connection in browser console
+- Confirm spectator server started (check `spectatorUrl`)
+
+### Input Not Working
+
+- Verify `allowHumanInput: true` in session config
+- Check browser console for error messages
+- Ensure game is focused and not paused
+
+### Connection Refused
+
+- Server binds to `127.0.0.1` only
+- Access from localhost, not other machines
+- Check port is not already in use
+
+### High Latency
+
+- Frame interval is 500ms by default
+- Network latency adds to update delay
+- Consider this is not a real-time gaming interface
+
+## Future Enhancements
+
+Planned improvements:
+
+- Configurable frame interval
+- WebP/AVIF format support
+- Resolution/quality options
+- Multi-spectator chat
+- Recording/replay functionality
+- `openBrowser` implementation
+
+See the [roadmap](https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/roadmap.md) for more details.

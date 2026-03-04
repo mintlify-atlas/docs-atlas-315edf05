@@ -1,0 +1,466 @@
+---
+title: State Inspection
+description: Fetch game state snapshots and incremental deltas
+---
+
+## state.get
+
+Fetch a structured state snapshot from the E2E harness.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="preset" type="enum<'compact' | 'debug'>" default="compact" optional>
+  State verbosity preset.
+  - `compact`: Returns essential game state with pruned lemming data
+  - `debug`: Returns full state including all internal fields
+</ParamField>
+
+<ParamField path="include" type="object" optional>
+  Fine-grained control over which sections to include.
+  <ParamField path="include.view" type="boolean" default="false" optional>
+    Include top-level GameView state.
+  </ParamField>
+  <ParamField path="include.stage" type="boolean" default="false" optional>
+    Include viewport/pan/scale info.
+  </ParamField>
+  <ParamField path="include.game" type="boolean" default="true" optional>
+    Include game simulation state.
+  </ParamField>
+  <ParamField path="include.editor" type="boolean" default="false" optional>
+    Include editor state (see e2e-editor-state.md).
+  </ParamField>
+  <ParamField path="include.midi" type="boolean" default="false" optional>
+    Include MIDI enable/router summary.
+  </ParamField>
+</ParamField>
+
+<ParamField path="lemmings" type="object" optional>
+  Lemming data options.
+  <ParamField path="lemmings.mode" type="enum<'none' | 'summary' | 'selected' | 'all' | 'ids'>" default="summary" optional>
+    How to include lemming data.
+    - `none`: No lemming data
+    - `summary`: Aggregated summary with top K lemmings
+    - `selected`: Only the selected lemming
+    - `all`: All lemmings (respects `max` limit)
+    - `ids`: Specific lemmings by ID array
+  </ParamField>
+  <ParamField path="lemmings.ids" type="array<integer>" optional>
+    Lemming IDs to include (only used when `mode` is `ids`).
+  </ParamField>
+  <ParamField path="lemmings.max" type="integer" optional>
+    Maximum lemmings to return when `mode` is `all`.
+  </ParamField>
+  <ParamField path="lemmings.topK" type="integer" default="10" optional>
+    Number of top lemmings in summary mode.
+  </ParamField>
+  <ParamField path="lemmings.includeSelected" type="boolean" optional>
+    Include selected lemming in summary.
+  </ParamField>
+  <ParamField path="lemmings.activeOnly" type="boolean" default="true" optional>
+    Filter to only active lemmings (not removed/disabled).
+  </ParamField>
+  <ParamField path="lemmings.inViewOnly" type="boolean" optional>
+    Filter to lemmings in current viewport.
+  </ParamField>
+  <ParamField path="lemmings.rectWorld" type="object" optional>
+    Filter to lemmings within a world-space rectangle.
+    <ParamField path="lemmings.rectWorld.x" type="number" required>
+      Rectangle X coordinate.
+    </ParamField>
+    <ParamField path="lemmings.rectWorld.y" type="number" required>
+      Rectangle Y coordinate.
+    </ParamField>
+    <ParamField path="lemmings.rectWorld.width" type="number" optional>
+      Rectangle width (can also use `w`).
+    </ParamField>
+    <ParamField path="lemmings.rectWorld.height" type="number" optional>
+      Rectangle height (can also use `h`).
+    </ParamField>
+  </ParamField>
+</ParamField>
+
+<ParamField path="format" type="object" optional>
+  Output format options.
+  <ParamField path="format.delivery" type="enum<'inline' | 'resource'>" default="inline" optional>
+    Return snapshot inline or as a resource URI.
+  </ParamField>
+  <ParamField path="format.pretty" type="boolean" optional>
+    Pretty-print JSON (applies to both inline and resource delivery).
+  </ParamField>
+  <ParamField path="format.includeSizeEstimate" type="boolean" optional>
+    Include estimated byte size in response.
+  </ParamField>
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Operation success status.
+</ResponseField>
+
+<ResponseField name="tickIndex" type="integer | null" required>
+  Current tick index from the snapshot.
+</ResponseField>
+
+<ResponseField name="preset" type="string" required>
+  The preset that was used.
+</ResponseField>
+
+<ResponseField name="snapshot" type="object" optional>
+  State snapshot (only present when `delivery` is `inline`).
+  <ResponseField name="snapshot.version" type="integer">
+    State schema version.
+  </ResponseField>
+  <ResponseField name="snapshot.mode" type="string">
+    Current mode: `game` or `editor`.
+  </ResponseField>
+  <ResponseField name="snapshot.ready" type="boolean">
+    Whether the game is ready for interaction.
+  </ResponseField>
+  <ResponseField name="snapshot.game" type="object" optional>
+    Game state (structure depends on preset and include flags).
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="resourceUri" type="string" optional>
+  Resource URI for the snapshot (only present when `delivery` is `resource`).
+</ResponseField>
+
+<ResponseField name="sizeBytes" type="integer" optional>
+  Actual size in bytes (when `delivery` is `resource`).
+</ResponseField>
+
+<ResponseField name="sizeBytesEstimate" type="integer" optional>
+  Estimated size in bytes (when `includeSizeEstimate` is true and `delivery` is `inline`).
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Compact Summary Request
+{
+  "sessionId": "abc123def456",
+  "preset": "compact",
+  "lemmings": {
+    "mode": "summary",
+    "topK": 8,
+    "includeSelected": true
+  }
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "tickIndex": 1247,
+  "preset": "compact",
+  "snapshot": {
+    "version": 1,
+    "mode": "game",
+    "ready": true,
+    "game": {
+      "state": 2,
+      "finalGameState": null,
+      "timer": {
+        "tickIndex": 1247,
+        "running": false,
+        "speedFactor": 1
+      },
+      "victory": {
+        "leftCount": 45,
+        "outCount": 5,
+        "survivorCount": 5,
+        "releaseRate": 50,
+        "minReleaseRate": 0,
+        "isFinalize": false
+      },
+      "level": {
+        "name": "Fun 1 - Just dig!",
+        "width": 1600,
+        "height": 160,
+        "releaseCount": 50,
+        "needCount": 50,
+        "timeLimit": 300,
+        "isSuperLemming": false
+      },
+      "skills": {
+        "selectedSkill": 5,
+        "selectedSkillName": "builder",
+        "cheatMode": false,
+        "counts": [10, 10, 0, 0, 10, 5, 5, 10],
+        "availableMask": 239
+      },
+      "lemmingManager": {
+        "selectedIndex": 12,
+        "activeCount": 45,
+        "totalCount": 50,
+        "spawnTotal": 50,
+        "releaseTickIndex": 45,
+        "nukeTargets": []
+      },
+      "lemmingsSummary": {
+        "tickIndex": 1247,
+        "selectedLemmingId": 12,
+        "totalCount": 50,
+        "activeCount": 45,
+        "removedCount": 5,
+        "disabledCount": 0,
+        "byActionType": { "0": 30, "1": 10, "2": 5 },
+        "byState": { "0": 40, "1": 5 },
+        "climbers": 3,
+        "floaters": 2,
+        "countingDown": 0,
+        "exploded": 2,
+        "selected": {
+          "id": 12,
+          "x": 450,
+          "y": 80,
+          "state": 0,
+          "actionType": 0
+        },
+        "top": [
+          { "id": 12, "x": 450, "y": 80, "state": 0, "actionType": 0 },
+          { "id": 15, "x": 445, "y": 82, "state": 0, "actionType": 0 }
+        ]
+      },
+      "lemmings": []
+    }
+  }
+}
+```
+
+```json Debug Mode Request
+{
+  "sessionId": "abc123def456",
+  "preset": "debug",
+  "lemmings": {
+    "mode": "all",
+    "max": 20
+  },
+  "format": {
+    "delivery": "resource",
+    "pretty": true
+  }
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "tickIndex": 1247,
+  "preset": "debug",
+  "resourceUri": "lemmings://sessions/abc123def456/resources/xyz789abc",
+  "sizeBytes": 45621
+}
+```
+</CodeGroup>
+
+<Note>
+  The `compact` preset is optimized for AI agent token usage, returning only essential fields. Use `debug` preset when you need full internal state for debugging.
+</Note>
+
+---
+
+## state.delta
+
+Return filtered history deltas between ticks. Defaults to changes since the last `state.get` call.
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Session identifier.
+</ParamField>
+
+<ParamField path="afterTick" type="integer" optional>
+  Start tick (exclusive). Defaults to last `state.get` tick or `currentTick - 1`.
+</ParamField>
+
+<ParamField path="toTick" type="integer" optional>
+  End tick (inclusive). Defaults to current tick.
+</ParamField>
+
+<ParamField path="maxTicks" type="integer" default="10" optional>
+  Maximum number of ticks to return. Limits window from end.
+</ParamField>
+
+<ParamField path="include" type="object" optional>
+  Which change categories to include.
+  <ParamField path="include.lemmings" type="boolean" default="true" optional>
+    Lemming field changes.
+  </ParamField>
+  <ParamField path="include.lemmingManager" type="boolean" default="true" optional>
+    Lemming manager changes.
+  </ParamField>
+  <ParamField path="include.skills" type="boolean" default="true" optional>
+    Skill count changes.
+  </ParamField>
+  <ParamField path="include.victory" type="boolean" default="true" optional>
+    Victory counter changes.
+  </ParamField>
+  <ParamField path="include.timer" type="boolean" default="true" optional>
+    Timer changes.
+  </ParamField>
+  <ParamField path="include.game" type="boolean" default="false" optional>
+    Game state changes.
+  </ParamField>
+  <ParamField path="include.sound" type="boolean" default="false" optional>
+    Sound events.
+  </ParamField>
+  <ParamField path="include.minimap" type="boolean" default="false" optional>
+    Minimap death markers.
+  </ParamField>
+  <ParamField path="include.triggers" type="boolean" default="false" optional>
+    Trigger changes.
+  </ParamField>
+  <ParamField path="include.objects" type="boolean" default="false" optional>
+    Object animation changes.
+  </ParamField>
+  <ParamField path="include.ground" type="boolean" default="false" optional>
+    Ground mask changes.
+  </ParamField>
+  <ParamField path="include.entrances" type="boolean" default="false" optional>
+    Entrance changes.
+  </ParamField>
+</ParamField>
+
+<ParamField path="lemmings" type="object" optional>
+  Lemming delta filtering options.
+  <ParamField path="lemmings.fields" type="array<integer>" optional>
+    Field indices to include (see `protocol.lemmingDeltaFields`). Defaults to `[4,5,6,7,8,9,10,11,12,13]` (excludes x/y/lookRight/frameIndex).
+  </ParamField>
+  <ParamField path="lemmings.includePrev" type="boolean" default="false" optional>
+    Include previous values in addition to next values.
+  </ParamField>
+  <ParamField path="lemmings.includeXY" type="enum<'none' | 'tracked' | 'all'>" default="none" optional>
+    Control x/y coordinate change inclusion to reduce churn.
+  </ParamField>
+  <ParamField path="lemmings.trackedIds" type="array<integer>" optional>
+    Lemming IDs to track for x/y when `includeXY` is `tracked`.
+  </ParamField>
+  <ParamField path="lemmings.maxChanges" type="integer" default="250" optional>
+    Maximum lemming changes per tick.
+  </ParamField>
+</ParamField>
+
+<ParamField path="format" type="object" optional>
+  Output format options.
+  <ParamField path="format.delivery" type="enum<'inline' | 'resource'>" default="inline" optional>
+    Return deltas inline or as a resource URI.
+  </ParamField>
+  <ParamField path="format.pretty" type="boolean" optional>
+    Pretty-print JSON.
+  </ParamField>
+</ParamField>
+
+### Response
+
+<ResponseField name="ok" type="boolean" required>
+  Operation success status.
+</ResponseField>
+
+<ResponseField name="cursor" type="integer" required>
+  End tick of this delta window (use as `afterTick` for next call).
+</ResponseField>
+
+<ResponseField name="afterTick" type="integer" required>
+  The effective start tick (exclusive).
+</ResponseField>
+
+<ResponseField name="fromTick" type="integer" required>
+  First tick with deltas (inclusive).
+</ResponseField>
+
+<ResponseField name="toTick" type="integer" required>
+  Last tick with deltas (inclusive).
+</ResponseField>
+
+<ResponseField name="deltas" type="array<object>" optional>
+  Array of delta objects (only present when `delivery` is `inline`).
+  <ResponseField name="deltas[].tick" type="integer">
+    Tick index for this delta.
+  </ResponseField>
+  <ResponseField name="deltas[].lemChanges" type="object" optional>
+    Lemming field changes.
+    <ResponseField name="deltas[].lemChanges.ids" type="array<integer>">
+      Lemming IDs that changed.
+    </ResponseField>
+    <ResponseField name="deltas[].lemChanges.fields" type="array<integer>">
+      Field indices that changed (parallel to ids array).
+    </ResponseField>
+    <ResponseField name="deltas[].lemChanges.next" type="array<any>">
+      New values for changed fields.
+    </ResponseField>
+    <ResponseField name="deltas[].lemChanges.prev" type="array<any>" optional>
+      Previous values (if `includePrev` is true).
+    </ResponseField>
+  </ResponseField>
+  <ResponseField name="deltas[].lemAddedIds" type="array<integer>" optional>
+    Lemming IDs that were added this tick.
+  </ResponseField>
+  <ResponseField name="deltas[].lemRemovedIds" type="array<integer>" optional>
+    Lemming IDs that were removed this tick.
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="resourceUri" type="string" optional>
+  Resource URI for deltas (only present when `delivery` is `resource`).
+</ResponseField>
+
+<ResponseField name="sizeBytes" type="integer" optional>
+  Size in bytes (when `delivery` is `resource`).
+</ResponseField>
+
+<ResponseField name="events" type="object" optional>
+  Event envelope (if events mode is not 'none').
+</ResponseField>
+
+### Example
+
+<CodeGroup>
+```json Minimal Delta Request
+{
+  "sessionId": "abc123def456",
+  "lemmings": {
+    "includeXY": "none"
+  }
+}
+```
+
+```json Response
+{
+  "ok": true,
+  "cursor": 1252,
+  "afterTick": 1247,
+  "fromTick": 1248,
+  "toTick": 1252,
+  "deltas": [
+    {
+      "tick": 1248,
+      "lemChanges": {
+        "ids": [12, 15],
+        "fields": [4, 4],
+        "next": [1, 1]
+      }
+    },
+    {
+      "tick": 1250,
+      "victoryChanges": {
+        "outCount": 6
+      }
+    }
+  ]
+}
+```
+</CodeGroup>
+
+<Note>
+  Use `state.delta` instead of repeated `state.get` calls to efficiently track incremental changes. The default field filtering excludes noisy x/y coordinate updates.
+</Note>

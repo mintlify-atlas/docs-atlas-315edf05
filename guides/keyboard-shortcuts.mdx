@@ -1,0 +1,267 @@
+---
+title: Keyboard Shortcuts
+description: Complete keyboard shortcut reference for LemmingsJS-MIDI
+---
+
+## In-Game Shortcuts
+
+Press `F1` or `Shift+/` to display the keyboard shortcuts overlay while playing.
+
+## Complete Reference
+
+<Tabs>
+  <Tab title="Gameplay">
+    ### Release Rate
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `1` | Decrease by 1 | `releaseRateDown` |
+    | `Shift+1` | Decrease to minimum | `releaseRateDownMax` |
+    | `2` | Increase by 1 | `releaseRateUp` |
+    | `Shift+2` | Increase to maximum | `releaseRateUpMax` |
+    
+    ### Skills
+    
+    | Key | Skill | Binding Name |
+    | --- | --- | --- |
+    | `3` | Climber | `selectSkillClimber` |
+    | `4` | Floater | `selectSkillFloater` |
+    | `5` | Bomber | `selectSkillBomber` |
+    | `6` | Blocker | `selectSkillBlocker` |
+    | `Q` | Builder | `selectSkillBuilder` |
+    | `W` | Basher | `selectSkillBasher` |
+    | `E` | Miner | `selectSkillMiner` |
+    | `R` | Digger | `selectSkillDigger` |
+    | `Tab` | Cycle next | `cycleSkillNext` |
+    | `Shift+Tab` | Cycle previous | `cycleSkillPrev` |
+    | `K` | Apply to selected | `applySkillToSelected` |
+    
+    ### Time Control
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `Space` | Pause/Resume | `togglePause` |
+    | `]` | Step forward | `stepForward` |
+    | `[` | Step backward | `stepBackward` |
+    | `Alt+]` | Step backward (alt) | `stepBackward` |
+    | `B` | Toggle reverse | `toggleReverse` |
+    
+    ### Special
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `T` | Nuke | `nuke` |
+    | `Shift+T` | Instant nuke | `nukeInstant` |
+    | `Backspace` | Restart level | `restartLevel` |
+  </Tab>
+  
+  <Tab title="View & Speed">
+    ### Viewport Pan
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `Arrow Left` | Pan left | `panLeft` |
+    | `Arrow Right` | Pan right | `panRight` |
+    | `Arrow Up` | Pan up | `panUp` |
+    | `Arrow Down` | Pan down | `panDown` |
+    | `Shift` (any arrow) | Pan boost | `panBoost` |
+    
+    ### Zoom
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `Z` | Zoom in | `zoomIn` |
+    | `X` | Zoom out | `zoomOut` |
+    | `V` | Reset zoom | `zoomReset` |
+    
+    ### Speed
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `-` | Decrease speed | `speedDown` |
+    | `Numpad -` | Decrease speed | `speedDown` |
+    | `Alt+=` | Decrease speed (alt) | `speedDown` |
+    | `Alt+Numpad +` | Decrease speed (alt) | `speedDown` |
+    | `Shift+-` | Decrease fast | `speedDownFast` |
+    | `Shift+Numpad -` | Decrease fast | `speedDownFast` |
+    | `Alt+Shift+=` | Decrease fast (alt) | `speedDownFast` |
+    | `Alt+Shift+Numpad +` | Decrease fast (alt) | `speedDownFast` |
+    | `=` | Increase speed | `speedUp` |
+    | `Numpad +` | Increase speed | `speedUp` |
+    | `Shift+=` | Increase fast | `speedUpFast` |
+    | `Shift+Numpad +` | Increase fast | `speedUpFast` |
+  </Tab>
+  
+  <Tab title="Navigation & Debug">
+    ### Level Navigation
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `,` | Previous level | `levelPrev` |
+    | `.` | Next level | `levelNext` |
+    | `Shift+,` | Previous group | `levelGroupPrev` |
+    | `Shift+.` | Next group | `levelGroupNext` |
+    
+    ### Debug & Help
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `\` | Toggle debug | `toggleDebug` |
+    | `F1` | Show shortcuts | `toggleShortcutOverlay` |
+    | `Shift+/` | Show shortcuts | `toggleShortcutOverlay` |
+    | `Shift+\`` | Toggle editor | `editorToggle` |
+  </Tab>
+  
+  <Tab title="Editor">
+    ### Tools
+    
+    | Key | Tool | Binding Name |
+    | --- | --- | --- |
+    | `S` | Select | `editorToolSelect` |
+    | `T` | Terrain | `editorToolTerrain` |
+    | `G` | Gadget | `editorToolGadget` |
+    | `R` | Trigger | `editorToolTrigger` |
+    | `E` | Entrance | `editorToolEntrance` |
+    | `X` | Exit | `editorToolExit` |
+    | `F` | Steel | `editorToolSteel` |
+    | `B` | Brush | `editorToolBrush` |
+    | `D` | Eraser | `editorToolEraser` |
+    
+    ### Editing
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `Ctrl+C` | Copy | `editorCopy` |
+    | `Ctrl+V` | Paste | `editorPaste` |
+    | `Ctrl+D` | Duplicate | `editorDuplicate` |
+    | `Delete` | Delete | `editorDelete` |
+    | `Backspace` | Delete | `editorDelete` |
+    | `Z` | Undo | `editorUndo` |
+    | `Shift+Z` | Redo | `editorRedo` |
+    
+    ### Transform
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `Arrow` | Nudge 1px | `editorNudge[Direction]` |
+    | `Shift+Arrow` | Nudge fast | `editorNudge[Direction]Fast` |
+    | `Ctrl+G` | Snap to grid | `editorSnapSelection` |
+    | `Ctrl+Shift+]` | Bring to front | `editorBringToFront` |
+    | `Ctrl+Shift+[` | Send to back | `editorSendToBack` |
+    | `Alt+]` | Move forward | `editorMoveForward` |
+    | `Alt+[` | Move backward | `editorMoveBackward` |
+    
+    ### Playtest
+    
+    | Key | Action | Binding Name |
+    | --- | --- | --- |
+    | `P` | Toggle playtest | `editorTogglePlaytest` |
+    | `F1` | Show shortcuts | `editorToggleShortcutOverlay` |
+    | `Shift+/` | Show shortcuts | `editorToggleShortcutOverlay` |
+  </Tab>
+</Tabs>
+
+## Custom Keybindings
+
+### Configuration File
+
+Keybindings are defined in `keybindings.json` at the project root:
+
+```json keybindings.json
+{
+  "version": 1,
+  "bindings": {
+    "togglePause": ["Space"],
+    "stepForward": ["BracketRight"],
+    "stepBackward": ["BracketLeft", "Alt+BracketRight"],
+    "selectSkillBuilder": ["KeyQ"]
+  }
+}
+```
+
+### Binding Syntax
+
+<Steps>
+  <Step title="Physical Key Codes">
+    Use `KeyboardEvent.code` values (e.g., `KeyA`, `Digit1`, `Space`, `ArrowLeft`).
+  </Step>
+  
+  <Step title="Modifiers">
+    Join modifiers with `+`: `Shift+KeyT`, `Ctrl+KeyC`, `Alt+BracketRight`.
+    
+    Supported modifiers (case-insensitive):
+    - `Ctrl` / `Control`
+    - `Alt`
+    - `Shift`
+    - `Meta` / `Cmd` / `Command` / `Win`
+  </Step>
+  
+  <Step title="Pure Modifiers">
+    For modifier-only keys, use specific codes: `ShiftLeft`, `ShiftRight`, `ControlLeft`.
+  </Step>
+  
+  <Step title="Multiple Bindings">
+    Assign multiple key combinations to a single action using an array.
+  </Step>
+</Steps>
+
+### Conflict Resolution
+
+<Note>
+  - Multiple actions can bind to the same chord; all dispatch in declaration order
+  - Exact modifier matches take priority
+  - Shift is optional unless Ctrl/Alt/Meta are pressed
+  - Browser shortcuts (Ctrl/Alt/Meta combos) are preserved when no exact match exists
+</Note>
+
+### Example Customization
+
+<CodeGroup>
+```json WASD Movement
+{
+  "panLeft": ["KeyA"],
+  "panRight": ["KeyD"],
+  "panUp": ["KeyW"],
+  "panDown": ["KeyS"]
+}
+```
+
+```json Vim-style Controls
+{
+  "panLeft": ["KeyH"],
+  "panDown": ["KeyJ"],
+  "panUp": ["KeyK"],
+  "panRight": ["KeyL"]
+}
+```
+
+```json Multiple Bindings
+{
+  "togglePause": ["Space", "KeyP", "Escape"],
+  "restartLevel": ["Backspace", "KeyR"]
+}
+```
+</CodeGroup>
+
+## Design Notes
+
+The keybindings system follows these principles:
+
+1. **JSON-driven**: All actions are configurable without code changes
+2. **Multiple bindings**: Each action supports multiple key combinations
+3. **Stable defaults**: Built-in defaults remain when config is missing
+4. **Runtime loading**: Config loads from `keybindings.json` via FileProvider
+5. **Graceful fallback**: Invalid bindings are ignored without crashing
+
+For implementation details, see [keybindings-design.md](https://github.com/doublemover/LemmingsJS-MIDI/blob/main/docs/keybindings-design.md).
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Game Controls" icon="gamepad" href="/guides/controls">
+    Mouse and keyboard control overview
+  </Card>
+  <Card title="URL Parameters" icon="link" href="/guides/url-parameters">
+    Configure game via URL query params
+  </Card>
+</CardGroup>
